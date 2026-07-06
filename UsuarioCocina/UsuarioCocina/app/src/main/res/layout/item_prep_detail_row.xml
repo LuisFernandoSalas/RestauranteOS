@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardItemContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeColor="#E0E0E0"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clItemContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvPrepQuantity"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_quantity_circle"
+            android:gravity="center"
+            android:text="3"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvPrepProductName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Pozole rojo"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/btnItemPrep"
+            app:layout_constraintStart_toEndOf="@id/tvPrepQuantity"
+            app:layout_constraintTop_toTopOf="@id/tvPrepQuantity" />
+
+        <LinearLayout
+            android:id="@+id/llPrepNotes"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="@id/tvPrepProductName"
+            app:layout_constraintStart_toStartOf="@id/tvPrepProductName"
+            app:layout_constraintTop_toBottomOf="@id/tvPrepProductName">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_pencil"
+                app:tint="#8D6E63" />
+
+            <TextView
+                android:id="@+id/tvPrepNotes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="bien tostadas"
+                android:textColor="#8D6E63"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnItemPrep"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="@color/terracotta_red"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="En prep."
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            app:cornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnItemReady"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/btnItemReady"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:backgroundTint="@color/terracotta_dark"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="✓ Listo"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            app:cornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

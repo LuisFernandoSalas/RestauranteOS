@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores base del sistema -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta de colores solicitada: Terracota y Crema -->
+    <color name="terracotta_dark">#7A3520</color>   <!-- Usado en Toolbar y Logo -->
+    <color name="terracotta_medium">#BE5A33</color>
+    <color name="orange_gold">#E08A2B</color>       <!-- Usado en Títulos principales -->
+    <color name="burnt_orange">#C1440E</color>      <!-- Usado en Botones y Subtítulos -->
+    <color name="cream_background">#FBF5EC</color>  <!-- Fondo principal de toda la app -->
+
+    <!-- Color de fondo para los campos de texto (oscuro para resaltar) -->
+    <color name="input_background">#1A1A1A</color>
+</resources>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="450dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="16dp"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header con Campana -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/terracotta_medium"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="20dp">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="@string/security_icon_desc"
+                android:src="@android:drawable/ic_popup_reminder"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="@string/new_order_title"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Información de Mesa y Mesero -->
+            <TextView
+                android:id="@+id/tvNewOrderInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mesa 8 · Mesero Hasiel G."
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <!-- Lista de Productos (Simulada) -->
+            <LinearLayout
+                android:id="@+id/containerNewOrderItems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical">
+
+                <!-- Item 1 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@color/terracotta_red"
+                        android:gravity="center"
+                        android:text="2"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Enchiladas verdes — sin picante"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Item 2 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@color/terracotta_red"
+                        android:gravity="center"
+                        android:text="1"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Agua Jamaica"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Item 3 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@color/terracotta_red"
+                        android:gravity="center"
+                        android:text="1"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Pozole rojo"
+                        android:textColor="@color/black"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Botones de Acción -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnAcceptOrder"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/terracotta_dark"
+                    android:text="@string/button_accept"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+                <Button
+                    android:id="@+id/btnLaterOrder"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/white"
+                    android:text="@string/button_see_later"
+                    android:textAllCaps="false"
+                    android:textColor="@color/black"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

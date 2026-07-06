@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="650dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/ocher"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_warning"
+                app:tint="@color/terracotta_red" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pausar producto"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="El producto se desactivará del menú QR y no estará disponible para nuevos pedidos."
+                android:textColor="#757575"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Selecciona el producto a pausar:"
+                android:textColor="#5D4037"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- Products Container -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cgProductsToPause"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:singleSelection="true">
+                <!-- Se llenará dinámicamente -->
+            </com.google.android.material.chip.ChipGroup>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Duración de la pausa:"
+                android:textColor="#5D4037"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <!-- Duration Grid -->
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:columnCount="3">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTime30"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="30 min"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTime1h"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="1 hora"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTimeReact"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Hasta reactivar"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+            </GridLayout>
+
+            <!-- Resumen de validación -->
+            <TextView
+                android:id="@+id/tvPauseSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="#FFF8E1"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="⚠️ Selecciona producto y duración para continuar"
+                android:textColor="#C1440E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <!-- Bottom Actions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConfirmPause"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/ocher"
+                    android:text="⏸ Confirmar pausa"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelPause"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Cancelar"
+                    android:textAllCaps="false"
+                    android:textColor="#757575"
+                    android:textSize="16sp"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="#D3D3D3"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

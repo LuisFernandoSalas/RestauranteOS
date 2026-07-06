@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_orders"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cream"
+    tools:context=".ui.OrdersActivity">
+
+    <!-- Toolbar Superior -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/terracotta_dark"
+        android:elevation="4dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingEnd="16dp">
+
+            <ImageView
+                android:id="@+id/btnLogout"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/logout_desc"
+                android:focusable="true"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="@color/white" />
+
+            <TextView
+                android:id="@+id/tvWelcomeChef"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="16dp"
+                android:layout_toEndOf="@id/btnLogout"
+                android:text="@string/welcome_chef"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="@string/chef_name"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+        </RelativeLayout>
+    </androidx.appcompat.widget.Toolbar>
+
+    <!-- Barra de pestañas / Filtro -->
+    <LinearLayout
+        android:id="@+id/tabBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="32dp"
+            android:padding="12dp"
+            android:text="@string/tab_orders"
+            android:textColor="@color/terracotta_dark"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="3dp"
+            android:layout_marginStart="24dp"
+            android:background="@color/terracotta_dark" />
+    </LinearLayout>
+
+    <!-- Grid de Pedidos -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvOrders"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="2"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabBar"
+        tools:listitem="@layout/item_order_card" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

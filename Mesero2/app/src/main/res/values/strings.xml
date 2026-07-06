@@ -1,0 +1,34 @@
+<resources>
+    <!-- Configuración general -->
+    <string name="app_name">Mesero2</string>
+    <string name="action_settings">Ajustes</string>
+
+    <!-- Etiquetas de navegación -->
+    <string name="first_fragment_label">Login</string>
+    <string name="second_fragment_label">Inicio</string>
+
+    <!-- Textos de la pantalla de Login -->
+    <string name="login_title">RestaurantOS</string>
+    <string name="login_subtitle">Inicia sesión para continuar</string>
+    <string name="label_user">Usuario</string>
+    <string name="label_password">Contraseña</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="btn_login">Ingresar</string>
+
+    <!-- Textos de la pantalla de Inicio -->
+    <string name="logout">Cerrar Sesión</string>
+    <string name="confirm_logout">¿Estás seguro de que deseas cerrar sesión?</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="welcome_message">Bienvenido a RestaurantOS</string>
+
+    <!-- Mensajes de respuesta y Diálogos -->
+    <string name="error_invalid_credentials">Usuario o contraseña incorrectos</string>
+    <string name="recovery_sent">Se ha enviado un correo de recuperación</string>
+    <string name="recovery_dialog_title">Recuperar Contraseña</string>
+    <string name="recovery_dialog_msg">Introduce el código enviado a tu correo</string>
+    <string name="recovery_code_hint">Código de 6 dígitos</string>
+    <string name="btn_verify">Verificar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="code_verified">Código verificado correctamente</string>
+</resources>

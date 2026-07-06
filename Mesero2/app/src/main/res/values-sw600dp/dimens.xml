@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="login_horizontal_margin">120dp</dimen>
+    <dimen name="login_logo_size">220dp</dimen>
+    <dimen name="login_top_margin">40dp</dimen>
+</resources>

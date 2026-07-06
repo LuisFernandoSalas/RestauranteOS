@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="550dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/terracotta_red"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvCancelTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="Cancelar pedido — Mesa 4"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="Esta acción no puede deshacerse. El pedido se registrará con motivo de cancelación."
+                android:textColor="#757575"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Motivo de cancelación *"
+                android:textColor="#5D4037"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etCancelReason"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_edittext_creme"
+                android:gravity="top"
+                android:hint="Ej: ingrediente agotado, error en pedido..."
+                android:padding="12dp"
+                android:textSize="14sp" />
+
+            <!-- Quick options grid-like -->
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:columnCount="2"
+                android:rowCount="2">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReasonOut"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Ingrediente agotado"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReasonWaiter"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Error del mesero"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReasonCustomer"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Solicitud del cliente"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReasonOther"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Otro"
+                    android:textAllCaps="false"
+                    android:textColor="#5D4037"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#D3D3D3" />
+            </GridLayout>
+
+            <!-- Bottom Actions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnConfirmCancel"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/terracotta_red"
+                    android:text="Confirmar cancelación"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+                <Button
+                    android:id="@+id/btnDismissCancel"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/white"
+                    android:text="Cancelar"
+                    android:textAllCaps="false"
+                    android:textColor="#757575"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="#D3D3D3"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

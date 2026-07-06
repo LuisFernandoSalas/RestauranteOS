@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <!-- Icono de Checkmark con Círculo -->
+        <FrameLayout
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@android:drawable/btn_default_small"
+            android:backgroundTint="#E0E0E0">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/security_icon_desc"
+                android:src="@android:drawable/checkbox_on_background"
+                app:tint="@android:color/white" />
+        </FrameLayout>
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/dialog_success_title"
+            android:textColor="@color/terracotta_dark"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Subtítulo subrayado -->
+        <TextView
+            android:id="@+id/tvSuccessSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/dialog_success_subtitle"
+            android:textColor="@color/terracotta_red"
+            android:textSize="14sp" />
+
+        <!-- Botón Continuar -->
+        <Button
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:backgroundTint="@color/cream"
+            android:text="@string/button_continue"
+            android:textAllCaps="false"
+            android:textColor="@color/terracotta_red"
+            android:textStyle="bold"
+            app:strokeColor="@color/terracotta_medium"
+            app:strokeWidth="1dp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

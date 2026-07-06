@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="350dp"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Header: Mesa y Menú -->
+        <RelativeLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/terracotta_medium"
+            android:padding="12dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvTableName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mesa 2"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvWaiterName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp"
+                android:layout_toStartOf="@id/btnMore"
+                android:text="Ana M."
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+
+            <ImageView
+                android:id="@+id/btnMore"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentEnd="true"
+                android:contentDescription="@string/security_icon_desc"
+                android:src="@android:drawable/ic_menu_more"
+                app:tint="@color/white" />
+        </RelativeLayout>
+
+        <!-- Footer fijo: Estado del Pedido (Anclado al fondo) -->
+        <Button
+            android:id="@+id/btnStatus"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_margin="12dp"
+            android:backgroundTint="@color/ocher"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/status_pending"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:cornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Área de Items con Scroll (Ocupa el resto del espacio) -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            app:layout_constraintBottom_toTopOf="@id/btnStatus"
+            app:layout_constraintTop_toBottomOf="@id/headerLayout">
+
+            <LinearLayout
+                android:id="@+id/containerItems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+                <!-- Los items se añaden aquí dinámicamente -->
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

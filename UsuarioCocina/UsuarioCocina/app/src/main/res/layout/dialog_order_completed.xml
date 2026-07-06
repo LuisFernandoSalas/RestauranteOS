@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="450dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginBottom="24dp"
+            android:src="@drawable/ic_thumb_up"
+            app:tint="#D3D3D3" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="¡Pedido completo!"
+            android:textColor="@color/terracotta_dark"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvCompletedMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:gravity="center"
+            android:text="Mesa 4 fue marcada como lista para entregar al mesero."
+            android:textColor="#757575"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btnReturnToPanel"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:backgroundTint="#FDF2EE"
+            android:text="Volver al panel"
+            android:textAllCaps="false"
+            android:textColor="@color/terracotta_dark"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

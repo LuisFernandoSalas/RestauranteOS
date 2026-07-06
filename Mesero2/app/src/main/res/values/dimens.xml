@@ -1,0 +1,11 @@
+<resources>
+    <!-- Márgenes generales -->
+    <dimen name="fab_margin">16dp</dimen>
+
+    <!-- Dimensiones para el Login (Celular) -->
+    <dimen name="login_horizontal_margin">32dp</dimen> <!-- Margen a los lados del formulario -->
+    <dimen name="login_logo_size">160dp</dimen>         <!-- Tamaño del logo en pantallas pequeñas -->
+    <dimen name="login_top_margin">24dp</dimen>         <!-- Espacio superior para evitar scroll -->
+    <dimen name="input_height">45dp</dimen>             <!-- Altura de los campos de texto -->
+    <dimen name="button_height">50dp</dimen>            <!-- Altura de los botones -->
+</resources>
