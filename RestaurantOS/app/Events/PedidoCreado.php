@@ -12,29 +12,39 @@ use Illuminate\Queue\SerializesModels;
 class PedidoCreado implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-    //esta variable publica es el json que va a viajar por el wbesocket
+
+    // Esta variable pública es el JSON completo que viaja por el WebSocket
     public $pedido;
+
     /**
-     * el constructor recibe el pedido recien guardado en mysql
+     * El constructor recibe el pedido recién guardado en MySQL
      */
     public function __construct(Pedido $pedido)
     {
-        $this->pedido = $pedido;
+        // 🚀 CRUCIAL: Cargamos las relaciones para que el JSON lleve los platillos, notas y datos de mesa
+        $this->pedido = $pedido->load([
+            'mesero:id,name', 
+            'mesa:id,numero', 
+            'detalles.producto:id,nombre'
+        ]);
     }
 
     /**
-     * en que canal (frecuencia) vamos a transmitir este aviso?
+     * ¿En qué canal (frecuencia) vamos a transmitir este aviso?
      */
     public function broadcastOn(): array
     {
-        //creamos un canal publico exclusivo para que las tablets de la cocina escuchen 
+        // Canal unificado para todo el ecosistema de pedidos de RestaurantOS
         return [
-            new Channel('cocina-canal'),
+            new Channel('pedidos'),
         ];
     }
-    //opcional: con que nombre identificara java a este evento?
+
+    /**
+     * El alias exacto que tus aplicaciones Java / Android escucharán
+     */
     public function broadcastAs(): string
     {
-        return 'nuevo-pedido';
+        return 'pedido.creado';
     }
 }

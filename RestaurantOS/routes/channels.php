@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+// Canal público o privado para notificar cambios en los pedidos
+Broadcast::channel('pedidos', function ($user) {
+    // Retorna true si el usuario tiene un rol autorizado (Cajero, Mesero, Cocinero, Admin)
+    return $user !== null; 
 });

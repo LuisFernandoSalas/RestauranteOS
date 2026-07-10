@@ -12,30 +12,40 @@ use Illuminate\Queue\SerializesModels;
 class PedidoActualizado implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    // El JSON completo y fresco que viajará por el WebSocket
     public $pedido;
+
     /**
-     * Create a new event instance.
+     * El constructor recibe el pedido modificado (por caja, cocina o mesero)
      */
     public function __construct(Pedido $pedido)
     {
-        $this->pedido = $pedido;
+        // 🚀 Cargamos los datos limpios y frescos junto con sus relaciones 
+        // para que la interfaz que reciba el evento dibuje los cambios al instante
+        $this->pedido = $pedido->load([
+            'mesero:id,name', 
+            'mesa:id,numero', 
+            'detalles.producto:id,nombre'
+        ]);
     }
 
     /**
-     * en que canal transmitimos?
+     * Canal unificado de transmisión
      */
     public function broadcastOn(): array
     {
-        //los meseros y la caja estaran sintonizados en este canal
+        // Sintonizado en la misma frecuencia general de todo RestaurantOS
         return [
-            new Channel('meseros-canal'),
+            new Channel('pedidos'),
         ];
     }
+
     /**
-     * nombre del evento que leera java
+     * Nombre del evento estándar que leerá tu código en Java / Android
      */
     public function broadcastAs(): string
     {
-        return 'pedido-actualizado';
+        return 'pedido.actualizado';
     }
 }

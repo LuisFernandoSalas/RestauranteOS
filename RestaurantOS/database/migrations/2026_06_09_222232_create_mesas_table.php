@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('mesas', function (Blueprint $table) {
             $table->id();
             $table->integer('numero')->unique();
-            $table->string('status', 20)->default('libre');
+            $table->string('estado', 20)->default('libre');
             $table->timestamps();
         });
     }

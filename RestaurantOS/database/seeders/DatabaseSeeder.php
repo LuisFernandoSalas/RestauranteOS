@@ -23,35 +23,40 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('admin123'), 
             'role' => 'admin'
         ]);
+        
         User::create([
             'name' => 'Hasiel', 
             'username' => 'hasielMesero01', 
             'password' => Hash::make('mesero123'), 
             'role' => 'mesero'
         ]);
+        
         User::create([
             'name' => 'Kevyn Bote', 
             'username' => 'kevynCaja', 
             'password' => Hash::make('cajero123'), 
             'role' => 'cajero'
         ]);
+        
         User::create([
             'name' => 'Fernando', 
             'username' => 'ferCocina', 
             'password' => Hash::make('cocina123'), 
             'role' => 'cocinero'
         ]);
+        
         User::create([
             'name' => 'Luis',
             'username' => 'luis', 
-            'password' => Hash::make('123456')
+            'password' => Hash::make('123456'),
+            'role' => 'mesero'
         ]);
 
-        // --- 2. CATÁLOGO DE MESAS (1 al 9 como en tu diseño) ---
+        // --- 2. CATÁLOGO DE MESAS (1 al 9 - Estandarizado a 'estado') ---
         for ($i = 1; $i <= 9; $i++) {
             Mesa::create([
                 'numero' => $i, 
-                'status' => 'libre'
+                'estado' => 'libre'
             ]);
         }
 
@@ -61,41 +66,45 @@ class DatabaseSeeder extends Seeder
         $categoriaBebida      = Categoria::create(['nombre' => 'Bebidas']);
         $categoriaPostre      = Categoria::create(['nombre' => 'Postres']);
 
-        // --- 4. PRODUCTOS ---
+        // --- 4. PRODUCTOS (Sincronizados con la nueva migración corregida) ---
         Producto::create([
-            'nombre'       => 'Enchiladas verdes',
-            'precio'       => 85.00,
-            'categoria_id' => $categoriaPlatoFuerte->id,
-            'status'       => 'activo' // <-- Añadido
+            'nombre'        => 'Enchiladas verdes',
+            'precio'        => 85.00,
+            'categoria_id'  => $categoriaPlatoFuerte->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
         ]);
 
         Producto::create([
-            'nombre'       => 'Pozole rojo',
-            'precio'       => 95.00,
-            'categoria_id' => $categoriaPlatoFuerte->id,
-            'status'       => 'activo' // <-- Añadido
+            'nombre'        => 'Pozole rojo',
+            'precio'        => 95.00,
+            'categoria_id'  => $categoriaPlatoFuerte->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
         ]);
 
         Producto::create([
-            'nombre'       => 'Tostadas de pata',
-            'precio'       => 45.00,
-            'categoria_id' => $categoriaEntrada->id,
-            'status'       => 'activo' // <-- Añadido
+            'nombre'        => 'Tostadas de pata',
+            'precio'        => 45.00,
+            'categoria_id'  => $categoriaEntrada->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
         ]);
 
         Producto::create([
-            'nombre'       => 'Agua de Jamaica',
-            'precio'       => 20.00,
-            'categoria_id' => $categoriaBebida->id,
-            'status'       => 'activo' // <-- Añadido
+            'nombre'        => 'Agua de Jamaica',
+            'precio'        => 20.00,
+            'categoria_id'  => $categoriaBebida->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
         ]);
 
         Producto::create([
-            'nombre'       => 'Pastel de Chocolate',
-            'precio'       => 35.00,
-            'categoria_id' => $categoriaPostre->id,
-            'status'       => 'activo' // <-- Añadido
+            'nombre'        => 'Pastel de Chocolate',
+            'precio'        => 35.00,
+            'categoria_id'  => $categoriaPostre->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
         ]);
-
     }
 }

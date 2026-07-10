@@ -8,13 +8,14 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * CFDIs
      */
     public function up(): void
     {
-        Schema::create('invoices', function (Blueprint $table) {
+        Schema::create('recetas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained();
+            $table->foreignId('producto_id')->constrained()->onDelete('cascade');
+            $table->foreignId('insumo_id')->constrained()->onDelete('cascade');
+            $table->decimal('cantidad_por_porcion', 10, 3); // Ej: 0.150 kg o g
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('invoices');
+        Schema::dropIfExists('recetas');
     }
 };
