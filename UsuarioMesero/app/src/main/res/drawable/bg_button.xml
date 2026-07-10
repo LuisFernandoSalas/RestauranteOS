@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo redondeado para el botón de ingresar -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/terracota_oscuro" />
+    <corners android:radius="12dp" />
+</shape>

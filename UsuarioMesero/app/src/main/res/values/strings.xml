@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">UsuarioMesero</string>
+    <string name="header_title">RestaurantOS</string>
+    <string name="module_name">Módulo de Mesero</string>
+    <string name="system_description">Waiter Management System</string>
+    <string name="restricted_access_title">Acceso restringido a red local</string>
+    <string name="restricted_access_subtitle">Solo personal autorizado</string>
+
+    <string name="welcome_title">Bienvenido</string>
+    <string name="welcome_subtitle">Inicia sesión para continuar</string>
+    <string name="label_user">Correo o usuario</string>
+    <string name="label_password">Contraseña</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="btn_login">Ingresar</string>
+    <string name="hint_user">Ingresa tu usuario</string>
+    <string name="hint_password">********</string>
+
+    <!-- Pantalla de Mesas -->
+    <string name="title_mesas">Mesas</string>
+    <string name="welcome_user">Hola Hasiel!</string>
+    <string name="status_libre">Libre</string>
+    <string name="status_ocupado">Ocupado</string>
+    <string name="status_cobro">Cobro</string>
+    <string name="status_cobro_pendiente">Cobro pendiente</string>
+    <string name="more_mesas">+3 mesas</string>
+    <string name="mesa_name">Mesa %1$d</string>
+
+    <!-- Menú Lateral -->
+    <string name="menu_mesas">Mesas</string>
+    <string name="menu_pedidos">Pedidos</string>
+    <string name="user_name_full">Hasiel G.</string>
+    <string name="user_role">Mesero</string>
+</resources>

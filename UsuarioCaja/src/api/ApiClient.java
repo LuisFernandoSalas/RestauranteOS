@@ -8,57 +8,58 @@ import java.time.Duration;
 
 public class ApiClient {
     private static final String BASE_URL = "http://127.0.0.1:8000/api/";
-    private static final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+    private static final HttpClient client = HttpClient.newHttpClient();
 
-    // 1️⃣ NUESTRO TOKEN: Aquí guardamos la llave para las mesas
-    public static String token = "";
-
+    // Ejemplo de tu método GET modificado
     public static String get(String endpoint) throws Exception {
-        System.out.println("DEBUG: Pidiendo endpoint -> " + endpoint);
-        System.out.println("DEBUG: Token actual en ApiClient -> [" + token + "]");
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
+        // 1. Empezamos a armar la petición
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + endpoint))
                 .header("Accept", "application/json");
 
-        if (token != null && !token.isEmpty()) {
-            builder.header("Authorization", "Bearer " + token);
+        // 🚀 2. AQUÍ ESTÁ LA MAGIA: Si hay token, se lo inyectamos a la cabecera
+        if (SessionManager.hasToken()) {
+            requestBuilder.header("Authorization", "Bearer " + SessionManager.getToken());
         }
 
-        // Dentro del método GET de tu ApiClient.java:
-        if (api.SessionManager.hasToken()) {
-            builder.header("Authorization", "Bearer " + api.SessionManager.getToken());
-        }
+        HttpRequest request = requestBuilder.GET().build();
 
-        HttpRequest request = builder.GET().build();
+        // 3. Enviamos la petición
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
             return response.body();
         } else {
-            // Si da 401, imprimimos qué nos responde el servidor para entenderlo mejor
-            System.out.println("❌ Error 401 en: " + endpoint + " | Respuesta: " + response.body());
-            throw new RuntimeException("Error en servidor: " + response.statusCode());
+            throw new Exception("Error de API (" + response.statusCode() + "): " + response.body());
         }
     }
 
-    // 2️⃣ NUESTRO POST: El motor para el login que nos faltaba
+    // 2️⃣ NUESTRO POST: El motor HTTP nivel Senior
     public static String post(String endpoint, String jsonBody) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + endpoint))
                 .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
+                .header("Accept", "application/json");
+
+        // 🚀 AJUSTE 1: Si ya estamos logueados, mandamos el token en TODO POST
+        if (SessionManager.hasToken()) {
+            requestBuilder.header("Authorization", "Bearer " + SessionManager.getToken());
+        }
+
+        // Construimos finalmente la petición POST
+        HttpRequest request = requestBuilder
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() == 200) {
-            return response.body(); // Nos regresa el JSON con el token de José
+        // 🚀 AJUSTE 2: Aceptamos cualquier código de la familia 200 (200 OK, 201 Created, etc.)
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            return response.body();
         } else {
-            throw new RuntimeException("Error en servidor: " + response.statusCode());
+            // 🚀 AJUSTE 3: Mostramos el mensaje real de Laravel para depurar más rápido
+            throw new RuntimeException("Error HTTP " + response.statusCode() + " - Detalle: " + response.body());
         }
     }
 }

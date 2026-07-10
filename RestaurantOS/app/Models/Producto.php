@@ -27,7 +27,7 @@ class Producto extends Model
     // Relación: Un producto pertenece a una categoría
     public function categoria()
     {
-        return $this->belongsTo(Categoria::class);
+        return $this->belongsTo(Categoria::class, 'categoria_id');
     }
 
     // Scope para filtrar productos disponibles (activos y no pausados)

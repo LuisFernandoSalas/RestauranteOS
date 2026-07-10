@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="8dp">
+
+    <!-- Cantidad -->
+    <TextView
+        android:id="@+id/tv_cantidad"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/bg_rounded_quantity"
+        android:backgroundTint="@color/terracota_medio"
+        android:gravity="center"
+        android:text="2"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Nombre Producto -->
+    <LinearLayout
+        android:id="@+id/layout_nombre_nota"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="@id/tv_cantidad"
+        app:layout_constraintEnd_toStartOf="@+id/tv_precio_orden"
+        app:layout_constraintStart_toEndOf="@id/tv_cantidad"
+        app:layout_constraintTop_toTopOf="@id/tv_cantidad">
+
+        <TextView
+            android:id="@+id/tv_nombre_orden"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enchiladas verdes"
+            android:textColor="@color/terracota_oscuro"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/layout_nota_indicador"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="#757575" />
+
+            <TextView
+                android:id="@+id/tv_nota_item"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="Sin cebolla"
+                android:textColor="#757575"
+                android:textSize="12sp"
+                android:textStyle="italic" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Precio -->
+    <TextView
+        android:id="@+id/tv_precio_orden"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="$120.00"
+        android:textColor="@color/terracota_oscuro"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="@id/tv_cantidad"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tv_cantidad" />
+
+    <!-- Botones de Acción -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_precio_orden">
+
+        <ImageButton
+            android:id="@+id/btn_minus"
+            android:layout_width="32dp"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_rounded_quantity"
+            android:backgroundTint="@color/naranja_dorado"
+            android:src="@drawable/ic_minus"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            app:tint="@color/terracota_oscuro" />
+
+        <ImageButton
+            android:id="@+id/btn_remove"
+            android:layout_width="32dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_rounded_quantity"
+            android:backgroundTint="#D32F2F"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:background="#E0E0E0"
+        app:layout_constraintTop_toBottomOf="@id/btn_remove" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

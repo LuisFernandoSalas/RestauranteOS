@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="32dp">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/crema"
+            android:orientation="vertical">
+
+            <!-- Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/terracota_oscuro"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resumen de cobro"
+                    android:textColor="@color/white"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_back_resumen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_total_cobrar"
+                    android:backgroundTint="@color/terracota_rojizo"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:text="Regresar"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </RelativeLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <!-- PRODUCTOS -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input_field_cobro"
+                    android:backgroundTint="@color/white"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:layout_margin="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PRODUCTOS"
+                        android:textColor="@color/terracota_oscuro"
+                        android:textStyle="bold"
+                        android:textSize="16sp" />
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginTop="16dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2× Enchiladas verdes" android:textColor="@color/terracota_oscuro" />
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$170.00" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                            </RelativeLayout>
+                            <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1× Pozole rojo" android:textColor="@color/terracota_oscuro" />
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$95.00" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                            </RelativeLayout>
+                            <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2× Agua de Jamaica" android:textColor="@color/terracota_oscuro" />
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$40.00" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                            </RelativeLayout>
+                        </LinearLayout>
+                    </ScrollView>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/terracota_oscuro"
+                        android:padding="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tv_resumen_total"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="$350.75"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </RelativeLayout>
+                </LinearLayout>
+
+                <!-- PAGO -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input_field_cobro"
+                    android:backgroundTint="@color/white"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:layout_margin="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PAGO"
+                        android:textColor="@color/terracota_oscuro"
+                        android:textStyle="bold"
+                        android:textSize="16sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Subtotal" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_subtotal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$305.00" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                            <TextView android:id="@+id/tv_resumen_propina_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Propina (15%)" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_propina_monto" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$45.75" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Método" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_metodo" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Efectivo" android:textColor="#888888" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Recibi" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_recibi" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$400.00" android:textColor="@color/terracota_medio" android:textStyle="bold" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cambio" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_cambio" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="$49.25" android:textColor="@color/terracota_oscuro" android:textStyle="bold" />
+                        </RelativeLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- INFORMACION -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input_field_cobro"
+                    android:backgroundTint="@color/white"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:layout_margin="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="INFORMACIÓN"
+                        android:textColor="@color/terracota_oscuro"
+                        android:textStyle="bold"
+                        android:textSize="16sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fecha" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="5 jun 2026" android:textColor="#888888" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hora cobro" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="19:48" android:textColor="#888888" />
+                        </RelativeLayout>
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CFDI" android:textColor="@color/terracota_oscuro" />
+                            <TextView android:id="@+id/tv_resumen_cfdi" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="No solicitado" android:textColor="#888888" />
+                        </RelativeLayout>
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btn_aceptar_resumen"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:backgroundTint="@color/terracota_oscuro"
+                        android:text="Aceptar"
+                        android:textAllCaps="false"
+                        android:textColor="@color/white"
+                        android:textSize="20sp"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

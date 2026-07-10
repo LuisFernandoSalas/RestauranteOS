@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout para un elemento individual de la cuadrícula de Mesas.
+    Diseñado para ser expandible y coincidir con el estilo visual:
+    bordes gruesos, esquinas redondeadas y textos centrados.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/ll_mesa_container"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:background="@drawable/bg_mesa_libre"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_mesa_numero"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mesa 1"
+            android:textColor="@color/terracota_oscuro"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Precio o Estado (Libre) -->
+        <TextView
+            android:id="@+id/tv_mesa_status_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Libre"
+            android:textColor="@color/mesa_texto_libre"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</FrameLayout>

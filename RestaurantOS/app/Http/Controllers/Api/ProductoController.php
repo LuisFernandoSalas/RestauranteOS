@@ -14,7 +14,7 @@ class ProductoController extends Controller
     public function index()
     {
         // Usamos tu scopeDisponibles() para filtrar automáticamente los status = 'activo'
-        $productos = Producto::disponibles()->get();
+        $productos = Producto::disponibles()->with('categoria')->get();
 
         return response()->json([
             'success' => true,

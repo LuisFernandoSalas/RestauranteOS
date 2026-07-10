@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo para mesa LIBRE: Borde negro sólido (3dp) y fondo blanco -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/white" />
+    <stroke android:width="3dp" android:color="@color/black" />
+    <corners android:radius="18dp" />
+</shape>

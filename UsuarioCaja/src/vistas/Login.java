@@ -226,56 +226,40 @@ public class Login extends JFrame {
         }
 
         // 🚀 Nuestro puente entra en acción en un hilo separado
+        // 🚀 Nuestro puente entra en acción en un hilo separado
         new Thread(() -> {
             try {
-                // 1️⃣ Declaramos el jsonInput de forma segura dentro del hilo
-                String jsonInput = "{\"username\": \"" + usuario + "\", \"password\": \"" + contrasena + "\"}";
+                // 1️⃣ Llamamos a nuestro nuevo puente profesional (Usa Gson por dentro)
+                api.AuthService.LoginResponse respuesta = api.AuthService.login(usuario, contrasena);
 
-                // Hacemos el POST usando NUESTRO ApiClient
-                String jsonResponse = api.ApiClient.post("login", jsonInput);
+                // 2️⃣ Guardamos el token en la memoria global
+                api.SessionManager.setToken(respuesta.token);
 
-                String tokenExtraido = "";
+                System.out.println("✅ Token recibido: " + respuesta.token.substring(0, 15) + "...");
+                System.out.println("✅ Usuario logueado: " + respuesta.user.name + " (Rol: " + respuesta.user.role + ")");
 
-                // 🧽 LIMPIEZA ABSOLUTA DEL JSON
-                String jsonLimpio = jsonResponse.replace("{", "").replace("}", "").replace("\"", "").replace(" ", "").trim();
-
-                if (jsonLimpio.contains("token:")) {
-                    tokenExtraido = jsonLimpio.split("token:")[1].split(",")[0].trim();
-
-                    // 💾 Almacén global por si acaso
-                    api.SessionManager.setToken(tokenExtraido);
-                }
-
-                // 🚨 ALERTA: Si falló, inspeccionamos qué mandó José
-                if (tokenExtraido.isEmpty()) {
-                    System.err.println("❌ ERROR CRÍTICO: El extractor falló. La API respondió esto: " + jsonResponse);
-                } else {
-                    System.out.println("✅ TOKEN EXTRAÍDO CON ÉXITO: " + tokenExtraido.substring(0, Math.min(15, tokenExtraido.length())) + "...");
-                }
-
-                // Preparamos el envío fijo
-                final String tokenParaEnviar = tokenExtraido;
-                final String usuarioParaEnviar = usuario; // Fijo para la lambda
-
-                // Si todo salió bien, abrimos la ventana de Kevyn en el hilo principal
+                // 3️⃣ Volvemos al hilo de la interfaz para abrir la ventana de Kevyn
                 java.awt.EventQueue.invokeLater(() -> {
                     dispose(); // Cierra el login
 
-                    System.out.println("✈️ Enviando token directo a la ventana: [" + tokenParaEnviar + "]");
-
-                    // 2️⃣ Le pasamos las variables fijas sin errores de compilación
-                    VentanaPrincipal principal = new VentanaPrincipal(usuarioParaEnviar, "Cajero", tokenParaEnviar);
+                    // Le pasamos el NOMBRE REAL, el ROL REAL y el TOKEN a la Ventana Principal
+                    VentanaPrincipal principal = new VentanaPrincipal(
+                            respuesta.user.name,
+                            respuesta.user.role,
+                            respuesta.token
+                    );
                     principal.setVisible(true);
                 });
 
             } catch (Exception ex) {
+                // Si Laravel manda error 401 (Credenciales inválidas) o no hay servidor
                 java.awt.EventQueue.invokeLater(() -> {
                     JOptionPane.showMessageDialog(this,
                             "Usuario o contraseña incorrectos o error de red.",
                             "Error de inicio de sesión",
                             JOptionPane.ERROR_MESSAGE);
                 });
-                ex.printStackTrace();
+                ex.printStackTrace(); // Para ver el error en la consola
             }
         }).start();
     }

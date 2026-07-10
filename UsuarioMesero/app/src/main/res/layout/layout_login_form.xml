@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Componente modular del Formulario de Login.
+    Contiene los campos de texto y el botón de ingreso para ser reutilizado
+    tanto en diseño de celular como de tablet.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Campo: Correo o usuario -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_user"
+        android:textColor="@color/texto_secundario"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/et_user"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_input_field"
+        android:hint="@string/hint_user"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/white"
+        android:textColorHint="#BBBBBB" />
+
+    <!-- Campo: Contraseña -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/label_password"
+        android:textColor="@color/texto_secundario"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_input_field"
+        android:hint="@string/hint_password"
+        android:inputType="textPassword"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/white"
+        android:textColorHint="#BBBBBB" />
+
+    <!-- Enlace: Olvidaste contraseña -->
+    <TextView
+        android:id="@+id/tv_forgot_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="12dp"
+        android:text="@string/forgot_password"
+        android:textColor="@color/terracota_rojizo"
+        android:textSize="13sp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- Botón de Ingresar -->
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="@color/terracota_oscuro"
+        android:text="@string/btn_login"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:cornerRadius="12dp" />
+
+    <!-- Indicador de carga para base de datos -->
+    <ProgressBar
+        android:id="@+id/pb_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        android:indeterminateTint="@color/terracota_oscuro" />
+
+</LinearLayout>

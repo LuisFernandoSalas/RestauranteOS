@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="340dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="40dp"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FFFFFF">
+
+        <!-- Cabecera Terracota -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/terracota_oscuro"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="20dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="@color/white" />
+
+            <TextView
+                android:id="@+id/tv_dialog_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Agregar nota"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Cuerpo del Diálogo en Blanco Puro -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Instrucciones especiales (opcional):"
+                android:textColor="#666666"
+                android:textSize="16sp" />
+
+            <!-- EditText con fondo Crema suave -->
+            <EditText
+                android:id="@+id/et_nota_instrucciones"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_product_card"
+                android:gravity="top"
+                android:hint="Ej: sin cebolla, extra picante, sin chile..."
+                android:padding="16dp"
+                android:textColor="@color/terracota_oscuro"
+                android:textSize="16sp" />
+
+            <!-- Botones tipo Pill -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_cancel_note"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="Cancelar"
+                    android:textAllCaps="false"
+                    android:textColor="@color/terracota_oscuro"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="30dp"
+                    app:strokeColor="@color/terracota_oscuro" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_save_note"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/terracota_oscuro"
+                    android:text="Guardar nota"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="30dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

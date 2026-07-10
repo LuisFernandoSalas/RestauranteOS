@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta Principal: Terracota y Crema -->
+    <color name="terracota_oscuro">#7A3520</color>
+    <color name="terracota_medio">#BE5A33</color>
+    <color name="terracota_rojizo">#C1440E</color>
+    <color name="crema">#FBF5EC</color>
+    <color name="crema_claro">#FFF9F2</color>
+
+    <!-- Estados de Mesas (Bordes y Textos) -->
+    <color name="mesa_libre_border">#000000</color>
+    <color name="mesa_ocupada_border">#BE5A33</color>
+    <color name="mesa_cobro_border">#C1440E</color>
+    <color name="mesa_texto_libre">#888888</color>
+
+    <!-- UI Elements -->
+    <color name="menu_icon_verde">#1B4332</color>
+    <color name="divider_color">#E5DED5</color>
+    <color name="texto_secundario">#666666</color>
+    <color name="gris_oscuro_input">#333333</color>
+    <color name="naranja_dorado">#FFB300</color>
+</resources>

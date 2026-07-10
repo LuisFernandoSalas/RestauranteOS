@@ -14,31 +14,27 @@ public class PanelMesas extends JPanel {
     // ─────────────────────────────────────────────
     // PALETA DE COLORES
     // ─────────────────────────────────────────────
-    private static final Color COLOR_BG      = new Color(0xFBF5EC);
-    private static final Color COLOR_ACCENT  = new Color(0x6B2D1A);
+    private static final Color COLOR_BG = new Color(0xFBF5EC);
+    private static final Color COLOR_ACCENT = new Color(0x6B2D1A);
     private static final Color COLOR_DIVIDER = new Color(0xC8A882);
 
-    private static final Color BORDER_LIBRE   = new Color(0x2E2E2E);
+    private static final Color BORDER_LIBRE = new Color(0x2E2E2E);
     private static final Color BORDER_OCUPADO = new Color(0xD48000);
-    private static final Color BORDER_COBRO   = new Color(0xB83C10);
+    private static final Color BORDER_COBRO = new Color(0xB83C10);
 
     // ─────────────────────────────────────────────
     // DATOS Y COMPONENTES
     // ─────────────────────────────────────────────
     private final List<Mesa> mesas = new ArrayList<>();
-    private JPanel           gridMesas;
+    private JPanel gridMesas;
 
     // ─────────────────────────────────────────────
     // CONSTRUCTOR
     // ─────────────────────────────────────────────
     // 🔑 Creamos una variable local para el panel
     // 1. Agrega esta variable al inicio de la clase PanelMesas
-    private String tokenLocal;
 
-    // 2. Modifica el constructor para que reciba el token
-    public PanelMesas(String token) {
-        this.tokenLocal = token; // 🔑 Guardado físico sin depender de estáticos
-
+    public PanelMesas() {
         setLayout(new BorderLayout());
         setBackground(COLOR_BG);
         setBorder(BorderFactory.createEmptyBorder(28, 32, 28, 32));
@@ -46,7 +42,8 @@ public class PanelMesas extends JPanel {
         add(buildHeader(),  BorderLayout.NORTH);
         add(buildCentro(),  BorderLayout.CENTER);
 
-        iniciarPolling();
+        // 🚀 AQUÍ LLAMAMOS A LA CARGA INICIAL
+        cargarMesasIniciales();
     }
     // ─────────────────────────────────────────────
     // ENCABEZADO: título + separador
@@ -222,101 +219,61 @@ public class PanelMesas extends JPanel {
     }
 
 
-    /**
-     * Carga las mesas desde la base de datos.
-     *
-     * TODO (BD): implementar con JDBC:
-     *   Connection con = DriverManager.getConnection(URL, USER, PASS);
-     *   PreparedStatement ps = con.prepareStatement(
-     *     "SELECT id_mesa, numero, estado, total, tiempo_min " +
-     *     "FROM mesas ORDER BY numero ASC");
-     *   ResultSet rs = ps.executeQuery();
-     *   List<Mesa> lista = new ArrayList<>();
-     *   while (rs.next()) {
-     *     lista.add(new Mesa(
-     *       rs.getInt("id_mesa"),
-     *       rs.getInt("numero"),
-     *       EstadoMesa.valueOf(rs.getString("estado")),
-     *       rs.getDouble("total"),
-     *       rs.getInt("tiempo_min")
-     *     ));
-     *   }
-     *   return lista;
-     */
+    // ═══════════════════════════════════════════════
+    // CARGA INICIAL (Solo se ejecuta 1 vez al entrar)
+    // ═══════════════════════════════════════════════
+    private void cargarMesasIniciales() {
+        // Creamos un hilo en segundo plano para no trabar la caja
+        new Thread(() -> {
+            try {
+                // 1. Vamos por la lista a la API (Aquí pedimos el valor, pero no usamos 'return')
+                List<Mesa> listaActualizada = api.MesaService.obtenerMesas();
+
+                // 2. Volvemos al hilo de la pantalla (UI) para dibujar las tarjetas
+                SwingUtilities.invokeLater(() -> {
+                    mesas.clear(); // Limpiamos la lista vieja
+                    mesas.addAll(listaActualizada); // Metemos las reales
+                    actualizarGrid(); // Le decimos a Kevyn que redibuje
+                });
+
+                // 3. Dejamos el socket listo para cuando José termine
+                conectarEscuchaPasiva();
+
+            } catch (Exception ex) {
+                System.err.println("Error al cargar mesas: " + ex.getMessage());
+                // Opcional: Mostrar un mensaje de error al cajero
+            }
+        }).start(); // ¡No olvides este .start() para que el hilo arranque!
+    }
 
     // ═══════════════════════════════════════════════
-    // POLLING - refresco automático desde BD
-    // TODO: descomentar las líneas internas cuando
-    //       cargarMesasDesdeBD() esté implementado
+    // ESCUCHA PASIVA (WebSockets)
     // ═══════════════════════════════════════════════
-    private void iniciarPolling() {
-        Timer timer = new Timer(4_000, e -> {
-            // Hacemos una copia fija (effectively final) para que la lambda no truene
-            final String tokenFijo = this.tokenLocal;
+    private void conectarEscuchaPasiva() {
+        // TODO: Cuando descarguemos la librería de Pusher para Java (pusher-java-client.jar)
+        /*
+        PusherOptions options = new PusherOptions().setCluster("tu_cluster");
+        Pusher pusher = new Pusher("TU_APP_KEY", options);
 
-            new Thread(() -> {
-                try {
-                    // 🔌 Inyectamos el token al ApiClient justo antes de pedir las mesas
-                    api.ApiClient.token = tokenFijo;
+        // Nos suscribimos al canal del restaurante
+        Channel channel = pusher.subscribe("restaurante-channel");
 
-                    List<Mesa> listaActualizada = cargarMesasDesdeBD();
-                    SwingUtilities.invokeLater(() -> {
-                        mesas.clear();
-                        mesas.addAll(listaActualizada);
-                        actualizarGrid();
-                    });
-                } catch (Exception ex) {
-                    System.err.println("Error en mesas: " + ex.getMessage());
-                }
-            }).start();
+        // Escuchamos pasivamente cuando un mesero cambie el estado de una mesa
+        channel.bind("mesa-actualizada", new SubscriptionEventListener() {
+            @Override
+            public void onEvent(PusherEvent event) {
+                // Laravel nos avisa: "¡Oye, la mesa 3 ahora está OCUPADA!"
+
+                // Volvemos a cargar silenciosamente o actualizamos solo esa tarjeta
+                cargarMesasIniciales(); // O una versión optimizada que no reconecte el socket
+            }
         });
-        timer.setRepeats(true);
-        timer.start();
+
+        pusher.connect();
+        */
+        System.out.println("🎧 Escucha pasiva lista para conectarse cuando José termine el evento en Laravel.");
     }
 
-    private List<Mesa> cargarMesasDesdeBD() {
-        List<Mesa> lista = new ArrayList<>();
-        try {
-            // Hacemos el GET al endpoint de mesas de José (ajusta "mesas" si su ruta es diferente)
-            String jsonJson = api.ApiClient.get("mesas");
-
-            // Parseo express del JSON (Mientras no tengamos Gson, este regex limpia y separa las tarjetas)
-            String[] objetos = jsonJson.split("\\},\\{");
-            for (String obj : objetos) {
-                int id = Integer.parseInt(extraerValor(obj, "id_mesa"));
-                int numero = Integer.parseInt(extraerValor(obj, "numero"));
-                String estadoStr = extraerValor(obj, "estado").toUpperCase();
-                double total = Double.parseDouble(extraerValor(obj, "total"));
-                int tiempoMin = Integer.parseInt(extraerValor(obj, "tiempo_min"));
-
-                EstadoMesa estado = EstadoMesa.valueOf(estadoStr);
-                lista.add(new Mesa(numero, estado, total, tiempoMin)); // Ajusta al constructor de tu clase Mesa
-            }
-        } catch (Exception e) {
-            System.err.println("Error parseando mesas: " + e.getMessage());
-            // Si falla la API, dejamos los dummies de Kevyn para que no se rompa la pantalla
-            return mesas;
-        }
-        return lista;
-    }
-
-    private String extraerValor(String json, String llave) {
-        try {
-            String patron = "\"" + llave + "\":";
-            int inicio = json.indexOf(patron) + patron.length();
-            if (json.charAt(inicio) == '"') {
-                inicio++;
-                int fin = json.indexOf("\"", inicio);
-                return json.substring(inicio, fin);
-            } else {
-                int fin = json.indexOf(",", inicio);
-                if (fin == -1) fin = json.indexOf("}", inicio);
-                return json.substring(inicio, fin).trim();
-            }
-        } catch (Exception e) {
-            return "0";
-        }
-    }
 
     // ═══════════════════════════════════════════════
     // ACCIÓN: clic en tarjeta

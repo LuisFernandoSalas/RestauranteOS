@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:background="@drawable/bg_product_card"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/tv_nombre_producto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:text="Enchiladas verdes"
+        android:textColor="@color/terracota_oscuro"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_product"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_precio_producto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="$60.00"
+        android:textColor="@color/terracota_medio"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_nombre_producto" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btn_add_product"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        app:cardBackgroundColor="@color/terracota_medio"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="@color/white" />
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

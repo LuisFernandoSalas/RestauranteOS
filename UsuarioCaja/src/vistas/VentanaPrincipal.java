@@ -76,7 +76,7 @@ public class VentanaPrincipal extends JFrame {
         setLayout(new BorderLayout());
 
         // 🔑 PRIMERO: Instanciamos el panel global pasándole el token directo
-        this.panelMesas = new PanelMesas(token);
+        this.panelMesas = new PanelMesas();
 
         // 🏗️ SEGUNDO: Construimos lo visual de forma segura
         add(buildSidebar(),      BorderLayout.WEST);
@@ -276,14 +276,27 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /** Abre PanelCobro cargando los datos de la mesa */
+    /** Abre PanelCobro preparando la llamada a la API */
     public void abrirCobro(Mesa mesa) {
-        panelCobro.cargarPedido(
-                mesa,
-                "Hasiel ....",          // TODO (BD): nombre real del mesero
-                45,                     // TODO (BD): minutos reales
-                PanelCobro.itemsDummy() // TODO (BD): items reales de BD
-        );
-        cardLayout.show(contentPanel, "COBRO_MESA");
-        setNavActivo(btnMesas);
+        // 🚀 MAÑANA: Haremos la petición a Laravel en este hilo secundario
+        new Thread(() -> {
+            try {
+                // Mañana aquí irá: DetalleCobro detalle = api.CobroService.obtenerDetalle(mesa.getId());
+
+                SwingUtilities.invokeLater(() -> {
+                    // Por esta noche, lo dejamos con valores vacíos para que compile limpio
+                    panelCobro.cargarPedido(
+                            mesa,
+                            "Cargando...",    // Mañana será detalle.getMesero()
+                            0,                // Mañana será detalle.getMinutos()
+                            new ArrayList<>() // Mañana serán los items reales
+                    );
+                    cardLayout.show(contentPanel, "COBRO_MESA");
+                    setNavActivo(btnMesas);
+                });
+            } catch (Exception e) {
+                System.err.println("Error preparando la vista de cobro: " + e.getMessage());
+            }
+        }).start();
     }
 }

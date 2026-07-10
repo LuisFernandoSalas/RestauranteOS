@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Componente del Perfil de Usuario para el Menú Lateral.
+    Muestra el avatar (iniciales) y nombre/rol.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
+
+    <!-- Avatar con iniciales -->
+    <TextView
+        android:id="@+id/tv_avatar_profile"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="@color/terracota_rojizo"
+        android:gravity="center"
+        android:text="HG"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/user_name_full"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/user_role"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:alpha="0.7" />
+    </LinearLayout>
+</LinearLayout>

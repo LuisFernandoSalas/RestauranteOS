@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout para la pantalla de Mesas (MODO TABLET).
+    Corregido para coincidir exactamente con el diseño:
+    - Cuadrícula de 3 columnas que llena la pantalla.
+    - Leyenda con espaciado amplio.
+    - Toolbar proporcional para tablets.
+-->
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Toolbar Tablet -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/toolbar_mesas"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/iv_menu_hamburguesa"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/menu_icon_verde"
+                android:onClick="openDrawerClick"
+                android:contentDescription="Menu" />
+
+            <TextView
+                android:id="@+id/tv_title_mesas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="@string/title_mesas"
+                android:textColor="@color/terracota_oscuro"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/iv_menu_hamburguesa"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_welcome_user_toolbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/welcome_user"
+                android:textColor="#999999"
+                android:textSize="18sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <View
+            android:id="@+id/divider_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#EEEEEE"
+            app:layout_constraintTop_toBottomOf="@id/toolbar_mesas" />
+
+        <!-- LEYENDA DE ESTADOS -->
+        <LinearLayout
+            android:id="@+id/layout_legend"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="24dp"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@id/divider_toolbar">
+
+            <!-- Libre -->
+            <View
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/black" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/status_libre"
+                android:textSize="16sp"
+                android:textColor="@color/terracota_oscuro"/>
+
+            <!-- Ocupado -->
+            <View
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="40dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/terracota_medio" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/status_ocupado"
+                android:textSize="16sp"
+                android:textColor="@color/terracota_oscuro"/>
+
+            <!-- Cobro -->
+            <View
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="40dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/terracota_rojizo" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/status_cobro_pendiente"
+                android:textSize="16sp"
+                android:textColor="@color/terracota_oscuro"/>
+        </LinearLayout>
+
+        <!-- GRILLA DE MESAS (3 COLUMNAS) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_mesas"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:padding="16dp"
+            android:clipToPadding="false"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_legend"
+            tools:listitem="@layout/item_mesa" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- MENÚ LATERAL (Personalizado) -->
+    <LinearLayout
+        android:id="@+id/nav_container_mesas"
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/terracota_oscuro"
+        android:orientation="vertical">
+
+        <include layout="@layout/nav_header" />
+
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/nav_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/terracota_oscuro"
+            app:itemBackground="@drawable/nav_item_background"
+            app:itemIconTint="@color/white"
+            app:itemTextColor="@color/white"
+            app:itemVerticalPadding="20dp"
+            app:menu="@menu/nav_menu" />
+
+        <include layout="@layout/nav_footer" />
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>

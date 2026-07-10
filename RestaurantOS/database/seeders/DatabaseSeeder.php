@@ -56,9 +56,10 @@ class DatabaseSeeder extends Seeder
         }
 
         // --- 3. CATÁLOGO DE CATEGORÍAS ---
-        $categoriaPlatoFuerte = Categoria::create(['nombre' => 'Plato fuerte']);
-        $categoriaEntrada     = Categoria::create(['nombre' => 'Entrada']);
-        $categoriaBebida      = Categoria::create(['nombre' => 'Bebida']);
+        $categoriaEntrada     = Categoria::create(['nombre' => 'Entradas']);
+        $categoriaPlatoFuerte = Categoria::create(['nombre' => 'Platos fuertes']);
+        $categoriaBebida      = Categoria::create(['nombre' => 'Bebidas']);
+        $categoriaPostre      = Categoria::create(['nombre' => 'Postres']);
 
         // --- 4. PRODUCTOS ---
         Producto::create([
@@ -86,6 +87,13 @@ class DatabaseSeeder extends Seeder
             'nombre'       => 'Agua de Jamaica',
             'precio'       => 20.00,
             'categoria_id' => $categoriaBebida->id,
+            'status'       => 'activo' // <-- Añadido
+        ]);
+
+        Producto::create([
+            'nombre'       => 'Pastel de Chocolate',
+            'precio'       => 35.00,
+            'categoria_id' => $categoriaPostre->id,
             'status'       => 'activo' // <-- Añadido
         ]);
 
