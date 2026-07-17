@@ -35,12 +35,23 @@ class MesaController extends Controller
             'mesa' => $mesa
         ], 200);
     }
+
+
     public function index()
     {
-        // Obtiene todas las mesas de la base de datos
-        $mesas = \App\Models\Mesa::all();
+        $mesas = \App\Models\Mesa::all()->map(function ($mesa) {
+            
+            $pedidoActivo = \App\Models\Pedido::where('mesa_id', $mesa->id)
+                ->whereNotIn('estado', ['pagado', 'cancelado']) // Volvemos a estado porque en tu modelo dice "estado" en la línea 24
+                ->first();
 
-        // Retorna la respuesta en formato JSON
+            // 🚨 AQUÍ ESTÁ LA MAGIA: 
+            // Usamos la función de José en lugar de la columna de la BD.
+            $mesa->total_actual = $pedidoActivo ? $pedidoActivo->total_calculado : 0.00;
+            
+            return $mesa;
+        });
+
         return response()->json($mesas, 200);
     }
 }

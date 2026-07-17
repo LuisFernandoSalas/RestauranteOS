@@ -1,34 +1,52 @@
 package com.example.usuariococina.models;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
-/**
- * Representa una comanda o pedido completo asignado a una mesa.
- * Agrupa varios productos (OrderItem) y mantiene el estado general de la atención.
- */
 public class Order {
-    // Número identificador de la mesa física
-    private int tableNumber;
 
-    // Nombre del mesero encargado de la orden
-    private String waiterName;
+    // Laravel manda un objeto "mesa"
+    @SerializedName("mesa")
+    private Mesa mesa;
 
-    // Lista de platos y bebidas incluidos en este pedido
+    // Laravel manda un objeto "mesero"
+    @SerializedName("mesero")
+    private Mesero mesero;
+
+    // Laravel manda un arreglo "detalles"
+    @SerializedName("detalles")
     private List<OrderItem> items;
 
-    // Estado actual de la orden (ej: "PENDIENTE", "EN PREPARACIÓN", "LISTO")
+    // Laravel manda "estado"
+    @SerializedName("estado")
     private String status;
 
-    public Order(int tableNumber, String waiterName, List<OrderItem> items, String status) {
-        this.tableNumber = tableNumber;
-        this.waiterName = waiterName;
-        this.items = items;
-        this.status = status;
+    // Clases anidadas para leer los objetos de Laravel
+    public static class Mesa {
+        @SerializedName("numero")
+        public int numero;
     }
 
-    // Getters para consulta de datos desde la UI y adaptadores
-    public int getTableNumber() { return tableNumber; }
-    public String getWaiterName() { return waiterName; }
-    public List<OrderItem> getItems() { return items; }
-    public String getStatus() { return status; }
+    public static class Mesero {
+        @SerializedName("name")
+        public String name;
+    }
+
+    // --- Mantenemos tus Getters originales para que la UI no se entere del cambio ---
+
+    public int getTableNumber() {
+        return (mesa != null) ? mesa.numero : 0;
+    }
+
+    public String getWaiterName() {
+        return (mesero != null && mesero.name != null) ? mesero.name : "Desconocido";
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    public String getStatus() {
+        return status != null ? status.toUpperCase() : "DESCONOCIDO";
+    }
 }

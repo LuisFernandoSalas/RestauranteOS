@@ -26,6 +26,9 @@ public class Mesa {
     @SerializedName("tiempo_min")
     private int tiempoMin;
 
+    @SerializedName("total_actual")
+    private double totalActual;
+
     // TODO: Después añadiremos la lista de productos real
     // private List<ItemOrden> itemsPedido;
 
@@ -41,8 +44,8 @@ public class Mesa {
     public Estado getEstado() {
         if (estadoString == null) return Estado.LIBRE;
         switch (estadoString.toLowerCase()) {
-            case "ocupado": return Estado.OCUPADA;
-            case "cobro": return Estado.COBRO;
+            case "ocupada": return Estado.OCUPADA;
+            case "cobrar": return Estado.COBRO;
             default: return Estado.LIBRE;
         }
     }
@@ -52,13 +55,16 @@ public class Mesa {
         return String.format("$ %.2f", total);
     }
 
+    public double getTotalActual() {
+        return totalActual;
+    }
 
     // --- SETTERS ---
 
     public void setEstado(Estado estado) {
         if (estado == Estado.LIBRE) this.estadoString = "libre";
-        else if (estado == Estado.OCUPADA) this.estadoString = "ocupado";
-        else if (estado == Estado.COBRO) this.estadoString = "cobro";
+        else if (estado == Estado.OCUPADA) this.estadoString = "ocupada";
+        else if (estado == Estado.COBRO) this.estadoString = "cobrar";
     }
 
     public void setPrecio(String precio) {
@@ -85,6 +91,10 @@ public class Mesa {
 
     public void setNombreInformacion(String nombreInformacion) {
         this.nombreInformacion = nombreInformacion;
+    }
+
+    public void setTotalActual(double totalActual) {
+        this.totalActual = totalActual;
     }
 
     // El estado del pedido que viene desde el controlador de José

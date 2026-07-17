@@ -18,9 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.usuariomesero.database.AppDatabase;
-import com.example.usuariomesero.database.MesaEntity;
-import com.example.usuariomesero.database.MesaDao;
+
 import com.example.usuariomesero.models.ItemOrden;
 import com.example.usuariomesero.adapters.OrdenAdapter;
 import java.util.ArrayList;
@@ -46,7 +44,6 @@ public class CobroActivity extends AppCompatActivity {
     private RecyclerView rvDetallePedido;
     private OrdenAdapter ordenAdapter;
     private List<ItemOrden> itemsPedido = new ArrayList<>();
-    private AppDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +51,6 @@ public class CobroActivity extends AppCompatActivity {
         setContentView(R.layout.activity_cobro);
 
         mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
-        db = AppDatabase.getInstance(this);
-        
-        cargarDatosMesa();
 
         // Inicializar vistas
         initViews();
@@ -69,16 +63,6 @@ public class CobroActivity extends AppCompatActivity {
         setupListeners();
     }
 
-    private void cargarDatosMesa() {
-        MesaEntity entity = db.mesaDao().getMesaByNumero(mesaNumero);
-        if (entity != null) {
-            totalPedido = parsePrecio(entity.getPrecio());
-            if (entity.getItemsPedido() != null) {
-                itemsPedido = entity.getItemsPedido();
-            }
-        }
-    }
-
     private void initViews() {
         TextView tvTitulo = findViewById(R.id.tv_cobro_titulo);
         if (tvTitulo != null) {
@@ -86,11 +70,6 @@ public class CobroActivity extends AppCompatActivity {
         }
 
         TextView tvMesaInfo = findViewById(R.id.tv_mesa_info_header);
-        if (tvMesaInfo != null) {
-            MesaEntity entity = db.mesaDao().getMesaByNumero(mesaNumero);
-            String info = (entity != null && entity.getNombreInformacion() != null) ? entity.getNombreInformacion() : "Hasiel";
-            tvMesaInfo.setText(String.format(Locale.getDefault(), "Mesa %d — %s", mesaNumero, info));
-        }
 
         tvSubtotal = findViewById(R.id.tv_subtotal_cobro);
         if (tvSubtotal != null) {

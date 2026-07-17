@@ -25,6 +25,7 @@ import com.example.usuariomesero.models.ItemOrden;
 import com.example.usuariomesero.models.Producto;
 import com.example.usuariomesero.models.ItemOrdenRequest; // 🚀 Importado
 import com.example.usuariomesero.models.OrdenRequest;     // 🚀 Importado
+import com.example.usuariomesero.models.RespuestaEnvio;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -91,13 +92,12 @@ public class PedidoDetalleActivity extends AppCompatActivity {
 
         // 3. Disparamos a Laravel
         ApiService api = ApiClient.getService(this);
-        api.enviarComandaACocina(ordenRequest).enqueue(new retrofit2.Callback<ApiResponse>() {
+        api.enviarComandaACocina(ordenRequest).enqueue(new retrofit2.Callback<RespuestaEnvio>() { // 🚀 CAMBIO AQUÍ
             @Override
-            public void onResponse(retrofit2.Call<ApiResponse> call, retrofit2.Response<ApiResponse> response) {
+            public void onResponse(retrofit2.Call<RespuestaEnvio> call, retrofit2.Response<RespuestaEnvio> response) { // 🚀 CAMBIO AQUÍ
                 if (response.isSuccessful()) {
                     mostrarDialogoOrdenEnviada();
                 } else {
-                    // 🚀 AGREGA ESTO PARA LEER EL CHISME DE LARAVEL:
                     if (response.errorBody() != null) {
                         try {
                             String errorDeLaravel = response.errorBody().string();
@@ -106,14 +106,12 @@ public class PedidoDetalleActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
-                    // --------------------------------------------------
-
                     Toast.makeText(PedidoDetalleActivity.this, "Error de servidor: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(retrofit2.Call<ApiResponse> call, Throwable t) {
+            public void onFailure(retrofit2.Call<RespuestaEnvio> call, Throwable t) { // 🚀 CAMBIO AQUÍ
                 Toast.makeText(PedidoDetalleActivity.this, "Fallo de red al enviar el pedido", Toast.LENGTH_SHORT).show();
                 android.util.Log.e("ERROR_ENVIO", t.getMessage());
             }
@@ -197,7 +195,7 @@ public class PedidoDetalleActivity extends AppCompatActivity {
         if (btnPostres != null) btnPostres.setOnClickListener(v -> updateCategorySelection("Postres", btnEntradas, btnPlatos, btnBebidas, btnPostres));
 
         if (btnPlatos != null) {
-            updateCategorySelection("Platos", btnEntradas, btnPlatos, btnBebidas, btnPostres);
+            updateCategorySelection("Platos fuertes", btnEntradas, btnPlatos, btnBebidas, btnPostres);
         }
     }
 

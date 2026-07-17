@@ -15,7 +15,7 @@ public class Producto {
     @SerializedName("categoria_id")
     private int categoriaId;
 
-    @SerializedName("status")
+    @SerializedName("estado")
     private String status;
 
     // Guardamos una imagen por defecto temporal ya que no viene de la base de datos

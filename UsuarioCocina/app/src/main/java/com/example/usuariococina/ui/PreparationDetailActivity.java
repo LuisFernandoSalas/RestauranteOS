@@ -46,8 +46,6 @@ public class PreparationDetailActivity extends AppCompatActivity {
         findViewById(R.id.btnCancelOrder).setOnClickListener(v -> showCancelOrderDialog());
         findViewById(R.id.btnPauseOrder).setOnClickListener(v -> showPauseProductDialog());
 
-        // Carga de datos iniciales (Simulado)
-        setupDummyData();
     }
 
     /**
@@ -243,24 +241,6 @@ public class PreparationDetailActivity extends AppCompatActivity {
         });
 
         dialog.show();
-    }
-
-    /**
-     * Inicializa datos de prueba para la visualización del KDS.
-     */
-    private void setupDummyData() {
-        tvPrepTitle.setText("Detalle — Mesa 4");
-        tvPrepMesaWaiter.setText("Mesa 4 — Mesero: Ana M.");
-
-        currentOrderItems.clear();
-        currentOrderItems.add(new OrderItem("Pozole rojo", 3, null));
-        currentOrderItems.add(new OrderItem("Tostadas", 2, "bien tostadas"));
-        currentOrderItems.add(new OrderItem("Agua Jamaica", 1, "sin azúcar"));
-
-        // Configuración del RecyclerView con el adaptador personalizado
-        PrepItemsAdapter adapter = new PrepItemsAdapter(currentOrderItems);
-        rvPrepItems.setLayoutManager(new LinearLayoutManager(this));
-        rvPrepItems.setAdapter(adapter);
     }
 }
 

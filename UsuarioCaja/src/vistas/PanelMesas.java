@@ -283,7 +283,7 @@ public class PanelMesas extends JPanel {
         if (mesa.getEstado() == EstadoMesa.COBRO) {
             VentanaPrincipal ventana = (VentanaPrincipal)
                     SwingUtilities.getWindowAncestor(this);
-            ventana.abrirCobro(mesa);
+            //ventana.abrirCobro(mesa);
         }
         // LIBRE y OCUPADO: sin acción por ahora
         // TODO: LIBRE → asignar mesa, OCUPADO → ver pedido activo

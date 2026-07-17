@@ -71,14 +71,38 @@ public class MesaAdapter extends RecyclerView.Adapter<MesaAdapter.MesaViewHolder
                 holder.tvStatusPrice.setText(R.string.status_libre);
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.mesa_texto_libre));
                 break;
+
             case OCUPADA:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
-                holder.tvStatusPrice.setText(mesa.getPrecioFormateado());
+
+                // 👇 NUEVA LÓGICA DE PRECIO PARA MESA OCUPADA 👇
+                if (mesa.getPrecioFormateado() != null && !mesa.getPrecioFormateado().isEmpty()) {
+                    // Si la orden se hizo en esta sesión (memoria temporal)
+                    holder.tvStatusPrice.setText(mesa.getPrecioFormateado());
+                } else if (mesa.getTotalActual() > 0) {
+                    // Si venimos de un reinicio y Laravel nos manda el total de la base de datos
+                    holder.tvStatusPrice.setText(String.format(java.util.Locale.getDefault(), "$%.2f", mesa.getTotalActual()));
+                } else {
+                    // Si la mesa no tiene total, la dejamos en blanco para que no se vea feo
+                    holder.tvStatusPrice.setText("");
+                }
+                // 👆 FIN DE LA NUEVA LÓGICA 👆
+
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 break;
+
             case COBRO:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_cobro);
-                holder.tvStatusPrice.setText(mesa.getPrecioFormateado());
+
+                // 👇 APLICAMOS LA MISMA LÓGICA PARA MESA EN COBRO 👇
+                if (mesa.getPrecioFormateado() != null && !mesa.getPrecioFormateado().isEmpty()) {
+                    holder.tvStatusPrice.setText(mesa.getPrecioFormateado());
+                } else if (mesa.getTotalActual() > 0) {
+                    holder.tvStatusPrice.setText(String.format(java.util.Locale.getDefault(), "$%.2f", mesa.getTotalActual()));
+                } else {
+                    holder.tvStatusPrice.setText("");
+                }
+
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 break;
         }
