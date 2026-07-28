@@ -67,7 +67,6 @@ class PedidoController extends Controller
                 $totalPedido = 0.00;
 
                 foreach ($request->productos as $item) {
-                    // 🔄 Cambiado a $item['id'] para sincronizarse perfectamente con GuardarPedidoRequest
                     $producto = Producto::findOrFail($item['id']);
                     $subtotal = $producto->precio * $item['cantidad'];
                     $totalPedido += $subtotal;
@@ -95,11 +94,12 @@ class PedidoController extends Controller
                     }
                     // ---------------------------------------------------------
 
+                    // 🚨 CORREGIDO: Se cambió 'precio' por 'precio_unitario'
                     DetallePedido::create([
                         'pedido_id'       => $pedido->id,
                         'producto_id'     => $producto->id,
                         'cantidad'        => $item['cantidad'],
-                        'precio'      => $producto->precio,
+                        'precio_unitario' => $producto->precio,
                         'nota'            => $item['nota'] ?? null,
                         'estado'          => 'pendiente',
                         'subtotal'        => $subtotal
@@ -118,7 +118,7 @@ class PedidoController extends Controller
                         'total' => $totalPedido
                     ]
                 ], 201);
-            });
+        });
         } catch (\Exception $e) {
             // Si falta stock de algún insumo, el rollback automático cancela todo el pedido de forma segura
             return response()->json([

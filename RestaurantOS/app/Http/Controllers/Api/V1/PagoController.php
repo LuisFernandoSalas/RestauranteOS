@@ -35,7 +35,7 @@ class PagoController extends Controller
     public function cobrar(CobrarPedidoRequest $request, $id): JsonResponse
     {
         // Bloquear el registro del pedido concurrentemente para evitar doble cobro
-        $pedido = Pedido::where('id', $id)->lockForUpdate()->firstOrFail();
+        $pedido = Pedido::with('mesa')->where('id', $id)->lockForUpdate()->firstOrFail();
 
         if (in_array($pedido->estado, ['pagado', 'cancelado'])) {
             return response()->json([
@@ -77,9 +77,9 @@ class PagoController extends Controller
             // Actualizar pedido a pagado
             $pedido->update(['estado' => 'pagado']);
 
-            // Liberar mesa vinculada
-            if ($pedido->mesa) {
-                $pedido->mesa->update(['estado' => 'libre']); 
+            // Liberar mesa mediante consulta directa por ID plano para evitar fallos de relación en memoria
+            if ($pedido->mesa_id) {
+                \App\Models\Mesa::where('id', $pedido->mesa_id)->update(['estado' => 'libre']); 
             }
         });
 

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('pedido_id')->constrained('pedidos')->onDelete('cascade');
             $table->foreignId('producto_id')->constrained('productos');
             $table->integer('cantidad');
+            $table->decimal('precio_unitario', 8, 2);
             $table->text('nota')->nullable();
             $table->enum
             (

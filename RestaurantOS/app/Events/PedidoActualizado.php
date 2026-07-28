@@ -21,7 +21,7 @@ class PedidoActualizado implements ShouldBroadcast
      */
     public function __construct(Pedido $pedido)
     {
-        // 🚀 Cargamos los datos limpios y frescos junto con sus relaciones 
+        // Cargamos los datos limpios y frescos junto con sus relaciones 
         // para que la interfaz que reciba el evento dibuje los cambios al instante
         $this->pedido = $pedido->load([
             'mesero:id,name', 

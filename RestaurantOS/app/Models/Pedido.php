@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // 1. Agrega esta importación
 
 class Pedido extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory; // 2. Agrega HasFactory aquí junto a SoftDeletes
 
     // 🚨 Eliminamos $appends = ['total'] para evitar el problema de rendimiento N+1.
     // Usaremos ->withSum('detalles', 'subtotal') en las consultas del controlador.
