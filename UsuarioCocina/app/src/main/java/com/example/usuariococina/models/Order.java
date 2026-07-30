@@ -1,45 +1,42 @@
 package com.example.usuariococina.models;
 
 import com.google.gson.annotations.SerializedName;
+
+import java.io.Serializable;
 import java.util.List;
 
-public class Order {
+public class Order implements Serializable {
 
-    // Laravel manda un objeto "mesa"
+    @SerializedName("pedido_id")
+    private int id;
+
+    // Laravel manda un número directo ("mesa": 1)
     @SerializedName("mesa")
-    private Mesa mesa;
+    private int mesa;
 
-    // Laravel manda un objeto "mesero"
+    // Laravel manda un texto directo ("mesero": "Hasiel")
     @SerializedName("mesero")
-    private Mesero mesero;
+    private String mesero;
 
-    // Laravel manda un arreglo "detalles"
-    @SerializedName("detalles")
-    private List<OrderItem> items;
-
-    // Laravel manda "estado"
-    @SerializedName("estado")
+    @SerializedName("estado_general")
     private String status;
 
-    // Clases anidadas para leer los objetos de Laravel
-    public static class Mesa {
-        @SerializedName("numero")
-        public int numero;
-    }
+    @SerializedName("platillos")
+    private List<OrderItem> items;
 
-    public static class Mesero {
-        @SerializedName("name")
-        public String name;
-    }
 
-    // --- Mantenemos tus Getters originales para que la UI no se entere del cambio ---
+    // --- Getters ---
+
+    public int getId() {
+        return id;
+    }
 
     public int getTableNumber() {
-        return (mesa != null) ? mesa.numero : 0;
+        return mesa;
     }
 
     public String getWaiterName() {
-        return (mesero != null && mesero.name != null) ? mesero.name : "Desconocido";
+        return mesero != null ? mesero : "Desconocido";
     }
 
     public List<OrderItem> getItems() {

@@ -2,11 +2,16 @@ package com.example.usuariococina.models;
 
 import com.google.gson.annotations.SerializedName;
 
-public class OrderItem {
+import java.io.Serializable;
 
-    // Laravel manda un objeto "producto" adentro del detalle
+public class OrderItem implements Serializable {
+
+    @SerializedName("detalle_id")
+    private int id;
+
+    // Laravel manda un texto directo ("producto": "Enchiladas verdes")
     @SerializedName("producto")
-    private Producto producto;
+    private String name;
 
     @SerializedName("cantidad")
     private int quantity;
@@ -14,16 +19,25 @@ public class OrderItem {
     @SerializedName("nota")
     private String note;
 
-    // Clase anidada para leer el producto
-    public static class Producto {
-        @SerializedName("nombre")
-        public String nombre;
+    @SerializedName("estado_platillo")
+    private String estado;
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 
-    // --- Tus Getters originales ---
+    // --- Getters ---
+
+    public int getId() {
+        return id;
+    }
+
+    public String getEstado() {
+        return estado != null ? estado : "pendiente";
+    }
 
     public String getName() {
-        return (producto != null && producto.nombre != null) ? producto.nombre : "Producto sin nombre";
+        return name != null ? name : "Producto sin nombre";
     }
 
     public int getQuantity() {

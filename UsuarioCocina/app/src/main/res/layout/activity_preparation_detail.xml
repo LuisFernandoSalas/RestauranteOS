@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/cream"
-    tools:context=".ui.PreparationDetailActivity">
+    tools:context=".adapters.PreparationDetailActivity">
 
     <!-- Top Bar -->
     <androidx.appcompat.widget.Toolbar

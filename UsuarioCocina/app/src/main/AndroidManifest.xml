@@ -30,8 +30,11 @@
             android:exported="true" />
 
         <activity
-            android:name=".ui.PreparationDetailActivity"
+            android:name=".adapters.PreparationDetailActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.PreparationDetailActivity" />
 
     </application>
 

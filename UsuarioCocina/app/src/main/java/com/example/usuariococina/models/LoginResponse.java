@@ -1,7 +1,13 @@
 package com.example.usuariococina.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class LoginResponse {
+
+    // Aquí le decimos a Gson el nombre exacto que manda Laravel
+    @SerializedName("access_token")
     private String token;
+
     private Usuario user;
 
     // Getters y Setters

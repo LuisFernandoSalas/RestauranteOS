@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import java.io.IOException;
 
 public class ApiClient {
-    public static final String BASE_URL = "http://10.0.2.2:8000/api/";xx
+    public static final String BASE_URL = "http://10.0.2.2:8000/api/";
     private static Retrofit retrofit = null;
 
     public static LaravelApiService getApiService(Context context) {
@@ -25,15 +25,17 @@ public class ApiClient {
                     Request originalRequest = chain.request();
                     String token = sessionManager.obtenerToken();
 
-                    if (token != null) {
-                        Request nuevoRequest = originalRequest.newBuilder()
-                                .header("Authorization", "Bearer " + token)
-                                .header("Accept", "application/json")
-                                .build();
-                        return chain.proceed(nuevoRequest);
+                    // 1. SIEMPRE preparamos el encabezado para exigir JSON
+                    Request.Builder requestBuilder = originalRequest.newBuilder()
+                            .header("Accept", "application/json");
+
+                    // 2. Si el token existe y NO está vacío, lo inyectamos
+                    if (token != null && !token.trim().isEmpty()) {
+                        requestBuilder.header("Authorization", "Bearer " + token);
                     }
 
-                    return chain.proceed(originalRequest);
+                    // 3. Continuamos con la petición ya armada
+                    return chain.proceed(requestBuilder.build());
                 }
             };
 
