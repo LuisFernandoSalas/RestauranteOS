@@ -71,6 +71,10 @@ public class PreparationDetailActivity extends AppCompatActivity {
         findViewById(R.id.btnCompleteOrder).setOnClickListener(v -> showOrderCompletedDialog());
         findViewById(R.id.btnCancelOrder).setOnClickListener(v -> showCancelOrderDialog());
         findViewById(R.id.btnPauseOrder).setOnClickListener(v -> showPauseProductDialog());
+<<<<<<< HEAD
+=======
+
+>>>>>>> d9dcc2e (feat: implement full API audit and security testing (RBAC, WebSockets, cash-out, and inventory))
     }
 
 
@@ -267,4 +271,9 @@ public class PreparationDetailActivity extends AppCompatActivity {
 
         dialog.show();
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+>>>>>>> d9dcc2e (feat: implement full API audit and security testing (RBAC, WebSockets, cash-out, and inventory))

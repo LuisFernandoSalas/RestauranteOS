@@ -22,9 +22,15 @@ public interface LaravelApiService {
     @POST("login")
     Call<LoginResponse> login(@Body LoginRequest request);
 
+<<<<<<< HEAD
     // ==========================================
     // 🍳 MÓDULO DE COCINA (Kitchen Display System)
     // ==========================================
+=======
+    // Monitor de Cocina
+    @GET("cocina/pedidos")
+    Call<List<Order>> getPedidosCocina();
+>>>>>>> d9dcc2e (feat: implement full API audit and security testing (RBAC, WebSockets, cash-out, and inventory))
 
     // 1. Obtiene el feed horizontal de comandas activas
     @GET("cocina/pedidos") // Asegúrate de que esta ruta sea la que tienes
