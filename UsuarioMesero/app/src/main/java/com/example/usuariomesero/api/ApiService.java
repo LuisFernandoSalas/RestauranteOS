@@ -3,6 +3,7 @@ package com.example.usuariomesero.api;
 import com.example.usuariomesero.models.Mesa;
 import com.example.usuariomesero.models.OrdenRequest;
 import com.example.usuariomesero.models.Producto;
+import com.example.usuariomesero.models.RespuestaEnvio;
 import com.google.gson.JsonObject;
 
 import java.util.List;
@@ -26,11 +27,6 @@ public interface ApiService {
     @GET("mesas")
     Call<List<Mesa>> obtenerMesas();
 
-    // Mañana agregaremos aquí la ruta para enviar pedidos:
-    @Headers("Accept: application/json")
-    @POST("api/mesas/{id}/pedidos")
-    Call<JsonObject> enviarPedido(@Path("id") int mesaId, @Body JsonObject datosPedido);
-
     // 🚀 Ruta para traer la comida real del servidor
     @Headers("Accept: application/json")
     @GET("productos") // Si José cambió esta ruta en su api.php, cámbiala aquí
@@ -38,5 +34,5 @@ public interface ApiService {
 
     @Headers("Accept: application/json")
     @POST("pedidos")
-    Call<ApiResponse> enviarComandaACocina(@Body OrdenRequest ordenRequest);
+    Call<RespuestaEnvio> enviarComandaACocina(@Body OrdenRequest orden);
 }

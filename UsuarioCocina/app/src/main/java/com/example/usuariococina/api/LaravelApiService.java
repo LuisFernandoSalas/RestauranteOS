@@ -22,7 +22,7 @@ public interface LaravelApiService {
     Call<LoginResponse> login(@Body LoginRequest request);
 
     // Monitor de Cocina
-    @GET("pedidos/cocina")
+    @GET("cocina/pedidos")
     Call<List<Order>> getPedidosCocina();
 
     // Actualizar el estado desde la cocina

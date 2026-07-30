@@ -277,7 +277,7 @@ public class VentanaPrincipal extends JFrame {
 
     /** Abre PanelCobro cargando los datos de la mesa */
     /** Abre PanelCobro preparando la llamada a la API */
-    public void abrirCobro(Mesa mesa) {
+    /*public void abrirCobro(Mesa mesa) {
         // 🚀 MAÑANA: Haremos la petición a Laravel en este hilo secundario
         new Thread(() -> {
             try {
@@ -298,5 +298,5 @@ public class VentanaPrincipal extends JFrame {
                 System.err.println("Error preparando la vista de cobro: " + e.getMessage());
             }
         }).start();
-    }
+    }*/
 }

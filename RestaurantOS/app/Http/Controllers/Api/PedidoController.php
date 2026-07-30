@@ -56,6 +56,10 @@ class PedidoController extends Controller
         try {
             return DB::transaction(function () use ($request) {
                 $mesa = Mesa::findOrFail($request->mesa_id);
+                if ($mesa) {
+                    $mesa->estado = 'ocupada';
+                    $mesa->save();
+                }
 
                 $pedido = Pedido::create([
                     'client_uuid' => $request->client_uuid,
@@ -176,6 +180,7 @@ class PedidoController extends Controller
 
         if ($pedido->mesa) {
             $pedido->mesa->update(['estado' => 'libre']);
+            
         }
 
         $pedido->delete();

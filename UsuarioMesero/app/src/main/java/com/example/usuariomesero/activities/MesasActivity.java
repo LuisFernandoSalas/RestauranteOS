@@ -5,12 +5,8 @@ import com.example.usuariomesero.api.ApiClient;
 import com.example.usuariomesero.api.ApiService;
 import com.example.usuariomesero.models.Mesa;
 import com.example.usuariomesero.adapters.MesaAdapter;
-import com.example.usuariomesero.database.AppDatabase;
-import com.example.usuariomesero.database.MesaEntity;
-import com.example.usuariomesero.database.MesaDao;
 import com.example.usuariomesero.models.ItemOrden;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import android.content.Intent;
@@ -235,75 +231,20 @@ public class MesasActivity extends AppCompatActivity {
     }
 
     private void actualizarMesaAOcupada(int numeroMesa, String total, List<ItemOrden> items, String info) {
-        // Buscamos el objeto Mesa correspondiente para sacar su ID real de la base de datos
-        Mesa mesaActual = null;
-        for (Mesa m : mesaList) {
-            if (m.getNumero() == numeroMesa) {
-                mesaActual = m;
+        // Ya NO mandamos nada a Laravel aquí porque PedidoDetalleActivity ya lo hizo con éxito.
+        // Solo cambiamos el estado visual localmente a OCUPADA.
+
+        for (Mesa mesa : mesaList) {
+            if (mesa.getNumero() == numeroMesa) {
+                mesa.setEstado(Mesa.Estado.OCUPADA);
+                mesa.setPrecio(total);
+
+                // Le decimos al adaptador que repinte esta mesa en la pantalla
+                mesaAdapter.notifyDataSetChanged();
+                Toast.makeText(this, "Mesa " + numeroMesa + " ocupada", Toast.LENGTH_SHORT).show();
                 break;
             }
         }
-
-        if (mesaActual == null) return;
-
-        Toast.makeText(this, "Enviando comanda a la cocina...", Toast.LENGTH_SHORT).show();
-
-        // 🚀 Construimos el JSON con los requerimientos exactos del Controller de José
-        JsonObject elPedido = new JsonObject();
-
-        // 1. Generamos el UUID de 36 caracteres que exige José
-        elPedido.addProperty("client_uuid", java.util.UUID.randomUUID().toString());
-
-        // 2. Mandamos el ID de la base de datos, no el número visual
-        elPedido.addProperty("mesa_id", mesaActual.getId());
-
-        // 3. Formateamos la lista de productos con los nombres exactos que espera su validador
-        com.google.gson.JsonArray listaProductosJson = new com.google.gson.JsonArray();
-        if (items != null) {
-            for (ItemOrden item : items) {
-                JsonObject productoObj = new JsonObject();
-                // Ajusta 'item.getId()' o 'item.getProductoId()' según tus variables de ItemOrden
-                productoObj.addProperty("producto_id", item.getProducto().getId());
-                productoObj.addProperty("cantidad", item.getCantidad());
-                productoObj.addProperty("nota", info); // Nota general o por producto
-                listaProductosJson.add(productoObj);
-            }
-        }
-        elPedido.add("productos", listaProductosJson);
-
-        // Disparamos a Laravel
-        // Cambia la llamada vieja por esta:
-        ApiService api = ApiClient.getService(this);
-
-        // 🚀 Le pasamos el ID real de la mesa y el JSON con los productos
-        api.enviarPedido(mesaActual.getId(), elPedido).enqueue(new retrofit2.Callback<JsonObject>() {
-            @Override
-            public void onResponse(retrofit2.Call<JsonObject> call, retrofit2.Response<JsonObject> response) {
-                // ... todo tu código de adentro se queda exactamente igual ...
-                if (response.isSuccessful()) {
-                    Toast.makeText(MesasActivity.this, "¡Comanda recibida en cocina!", Toast.LENGTH_LONG).show();
-
-                    // Cambiamos el estado visual localmente a OCUPADA
-                    for (Mesa mesa : mesaList) {
-                        if (mesa.getNumero() == numeroMesa) {
-                            mesa.setEstado(Mesa.Estado.OCUPADA);
-                            mesa.setPrecio(total);
-                            // Al crearse, el estado en el backend de José inicia en 'Activo', por ende bloqueará el cobro
-                            // hasta que el monitor de cocina lo cambie a 'listo'
-                            mesaAdapter.notifyDataSetChanged();
-                            break;
-                        }
-                    }
-                } else {
-                    Toast.makeText(MesasActivity.this, "Error: Laravel rechazó la estructura de la comanda", Toast.LENGTH_LONG).show();
-                }
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<JsonObject> call, Throwable t) {
-                Toast.makeText(MesasActivity.this, "Error de red al mandar comanda", Toast.LENGTH_LONG).show();
-            }
-        });
     }
 
     private void liberarMesa(int numeroMesa) {
