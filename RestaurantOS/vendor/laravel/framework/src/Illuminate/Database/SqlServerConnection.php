@@ -25,11 +25,9 @@ class SqlServerConnection extends Connection
     /**
      * Execute a Closure within a transaction.
      *
-     * @template TReturn
-     *
-     * @param  (\Closure(static): TReturn)  $callback
+     * @param  \Closure  $callback
      * @param  int  $attempts
-     * @return TReturn
+     * @return mixed
      *
      * @throws \Throwable
      */

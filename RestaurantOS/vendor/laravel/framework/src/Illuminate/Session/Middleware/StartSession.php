@@ -300,7 +300,7 @@ class StartSession
      * Resolve the given cache driver.
      *
      * @param  string  $driver
-     * @return \Illuminate\Contracts\Cache\Repository
+     * @return \Illuminate\Cache\Store
      */
     protected function cache($driver)
     {

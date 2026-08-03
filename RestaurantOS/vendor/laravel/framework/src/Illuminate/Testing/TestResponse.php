@@ -688,8 +688,6 @@ class TestResponse implements ArrayAccess
      *
      * @param  array  $value
      * @return $this
-     *
-     * @throws \JsonException
      */
     public function assertStreamedJsonContent($value)
     {
@@ -1748,8 +1746,6 @@ class TestResponse implements ArrayAccess
      * Assert that the session has no errors.
      *
      * @return $this
-     *
-     * @throws \JsonException
      */
     public function assertSessionHasNoErrors()
     {

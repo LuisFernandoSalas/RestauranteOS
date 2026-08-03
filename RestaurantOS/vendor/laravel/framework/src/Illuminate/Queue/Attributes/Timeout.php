@@ -10,7 +10,7 @@ class Timeout
     /**
      * Create a new attribute instance.
      *
-     * @param  int  $timeout  Seconds before the job is considered timed out.
+     * @param  int  $timeout
      */
     public function __construct(public int $timeout)
     {

@@ -26,9 +26,8 @@ final class MultipartStream implements StreamInterface
      * @param array       $elements Array of associative arrays, each containing a
      *                              required "name" key mapping to the form field,
      *                              name, a required "contents" key mapping to any
-     *                              non-array value accepted by Utils::streamFor()
-     *                              (non-string scalar field values are cast to
-     *                              string), or an array for nested expansion.
+     *                              non-array value accepted by Utils::streamFor(),
+     *                              or an array for nested expansion.
      *                              Optional keys include "headers" (associative
      *                              array of custom headers) and "filename" (string
      *                              to send as the filename in the part).
@@ -125,27 +124,7 @@ final class MultipartStream implements StreamInterface
             return;
         }
 
-        $contents = $element['contents'];
-        if (is_scalar($contents) && !is_string($contents)) {
-            // Multipart field values are byte strings on the wire, so finite
-            // numeric and boolean field values are cast to string here rather
-            // than tripping streamFor()'s non-string-scalar deprecation. Non-finite
-            // floats are deprecated and normalized here too, so the deprecation is
-            // reported against MultipartStream instead of transitively through
-            // streamFor().
-            if (is_float($contents) && !is_finite($contents)) {
-                \trigger_deprecation(
-                    'guzzlehttp/psr7',
-                    '2.12',
-                    'Passing a non-finite float as multipart contents is deprecated; guzzlehttp/psr7 3.0 rejects non-finite floats.'
-                );
-
-                $contents = is_nan($contents) ? 'NAN' : ($contents > 0 ? 'INF' : '-INF');
-            }
-
-            $contents = (string) $contents;
-        }
-        $element['contents'] = Utils::streamFor($contents);
+        $element['contents'] = Utils::streamFor($element['contents']);
 
         if (empty($element['filename'])) {
             $uri = $element['contents']->getMetadata('uri');

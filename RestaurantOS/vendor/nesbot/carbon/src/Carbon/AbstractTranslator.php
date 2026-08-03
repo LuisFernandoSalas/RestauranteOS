@@ -49,13 +49,6 @@ abstract class AbstractTranslator extends SymfonyTranslator
     protected array $directories = [];
 
     /**
-     * Cache for language files.
-     *
-     * @var array<string, array>
-     */
-    protected array $fileCache = [];
-
-    /**
      * Set to true while constructing.
      */
     protected bool $initializing = false;
@@ -178,7 +171,7 @@ abstract class AbstractTranslator extends SymfonyTranslator
 
         foreach ($this->getDirectories() as $directory) {
             $file = \sprintf('%s/%s.php', rtrim($directory, '\\/'), $locale);
-            $data = ($this->fileCache[$file] ??= self::loadFile($file));
+            $data = @include $file;
 
             if ($data !== false) {
                 $this->messages[$locale] = $data;
@@ -312,7 +305,7 @@ abstract class AbstractTranslator extends SymfonyTranslator
      */
     public function getMessages(?string $locale = null): array
     {
-        return $locale === null ? $this->messages : ($this->messages[$locale] ?? []);
+        return $locale === null ? $this->messages : $this->messages[$locale];
     }
 
     /**
@@ -322,12 +315,6 @@ abstract class AbstractTranslator extends SymfonyTranslator
      */
     public function setLocale($locale): void
     {
-        $previousLocale = $this->getLocale();
-
-        if ($previousLocale === $locale && isset($this->messages[$locale])) {
-            return;
-        }
-
         $locale = preg_replace_callback('/[-_]([a-z]{2,}|\d{2,})/', function ($matches) {
             // _2-letters or YUE is a region, _3+-letters is a variant
             $upper = strtoupper($matches[1]);
@@ -338,6 +325,8 @@ abstract class AbstractTranslator extends SymfonyTranslator
 
             return '_'.ucfirst($matches[1]);
         }, strtolower($locale));
+
+        $previousLocale = $this->getLocale();
 
         if ($previousLocale === $locale && isset($this->messages[$locale])) {
             return;
@@ -418,12 +407,7 @@ abstract class AbstractTranslator extends SymfonyTranslator
         $this->initializing = false;
     }
 
-    private function loadFile(string $file): array|false
-    {
-        return file_exists($file) ? (include $file) : false;
-    }
-
-    private static function compareChunkLists(array $referenceChunks, array $chunks): int
+    private static function compareChunkLists($referenceChunks, $chunks)
     {
         $score = 0;
 

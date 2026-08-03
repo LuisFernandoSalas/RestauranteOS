@@ -651,10 +651,8 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     /**
      * Execute a callback without broadcasting any model events for all model types.
      *
-     * @template TReturn
-     *
-     * @param  callable(): TReturn  $callback
-     * @return TReturn
+     * @param  callable  $callback
+     * @return mixed
      */
     public static function withoutBroadcasting(callable $callback)
     {

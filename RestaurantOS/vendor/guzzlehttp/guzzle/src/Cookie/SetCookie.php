@@ -128,25 +128,12 @@ class SetCookie
         }
 
         // Extract the Expires value and turn it into a UNIX timestamp if needed
-        $maxAge = $this->getMaxAge();
-        if (!$this->getExpires() && $maxAge !== null) {
+        if (!$this->getExpires() && $this->getMaxAge()) {
             // Calculate the Expires date
-            $this->setExpires(self::maxAgeToExpires($maxAge, \time()));
+            $this->setExpires(\time() + $this->getMaxAge());
         } elseif (null !== ($expires = $this->getExpires()) && !\is_numeric($expires)) {
             $this->setExpires($expires);
         }
-    }
-
-    private static function maxAgeToExpires(int $maxAge, int $now): int
-    {
-        if ($maxAge <= 0) {
-            return $now - 1;
-        }
-        if ($maxAge > \PHP_INT_MAX - $now) {
-            return \PHP_INT_MAX;
-        }
-
-        return $now + $maxAge;
     }
 
     public function __toString()
@@ -414,7 +401,7 @@ class SetCookie
         $cookiePath = $this->getPath();
 
         // Match on exact matches or when path is the default empty "/"
-        if ($cookiePath === '/' || $cookiePath === $requestPath) {
+        if ($cookiePath === '/' || $cookiePath == $requestPath) {
             return true;
         }
 
@@ -446,17 +433,12 @@ class SetCookie
 
         // Remove the leading '.' as per spec in RFC 6265.
         // https://datatracker.ietf.org/doc/html/rfc6265#section-5.2.3
-        $cookieDomain = \strtolower($cookieDomain);
-        if ($cookieDomain !== '' && $cookieDomain[0] === '.') {
-            /** @var string */
-            $cookieDomain = \substr($cookieDomain, 1);
-        }
-        if ('' === $cookieDomain) {
-            return false;
-        }
+        $cookieDomain = \ltrim(\strtolower($cookieDomain), '.');
 
         $domain = \strtolower($domain);
-        if ($domain === $cookieDomain) {
+
+        // Domain not set or exact match.
+        if ('' === $cookieDomain || $domain === $cookieDomain) {
             return true;
         }
 
@@ -509,7 +491,7 @@ class SetCookie
         // Domains must not be empty, but may be omitted. "0" is not a valid
         // internet domain, but may be used as server name in a private network.
         $domain = $this->getDomain();
-        if ($domain === '' || (null !== $domain && '' === \ltrim(\trim($domain), '.'))) {
+        if ($domain === '') {
             return 'The cookie domain must not be empty';
         }
 

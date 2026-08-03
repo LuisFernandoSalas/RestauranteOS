@@ -26,11 +26,7 @@ trait ReadsClassAttributes
             return $target->{$property};
         }
 
-        if ($instance = $this->getAttributeInstance($target, $attributeClass, $attributeDeclaringClass)) {
-            if ($this->propertyOverridesAttribute($target, $reflection, $property, $attributeDeclaringClass)) {
-                return $target->{$property};
-            }
-
+        if ($instance = $this->getAttributeInstance($target, $attributeClass)) {
             return $this->extractAttributeValue($instance);
         }
 
@@ -55,10 +51,9 @@ trait ReadsClassAttributes
      *
      * @param  object  $target
      * @param  class-string  $attributeClass
-     * @param  \ReflectionClass|null  $declaringClass
      * @return object|null
      */
-    protected function getAttributeInstance($target, string $attributeClass, ?ReflectionClass &$declaringClass = null)
+    protected function getAttributeInstance($target, string $attributeClass)
     {
         $reflection = new ReflectionClass($target);
 
@@ -67,19 +62,7 @@ trait ReadsClassAttributes
                 $attributes = $reflection->getAttributes($attributeClass);
 
                 if (count($attributes) > 0) {
-                    $declaringClass = $reflection;
-
                     return $attributes[0]->newInstance();
-                }
-
-                foreach ($reflection->getTraits() as $trait) {
-                    $attributes = $trait->getAttributes($attributeClass);
-
-                    if (count($attributes) > 0) {
-                        $declaringClass = $reflection;
-
-                        return $attributes[0]->newInstance();
-                    }
                 }
             } while ($reflection = $reflection->getParentClass());
         } catch (Exception) {
@@ -87,27 +70,5 @@ trait ReadsClassAttributes
         }
 
         return null;
-    }
-
-    /**
-     * Determine if a property declared on a child class overrides an inherited attribute.
-     *
-     * @param  object  $target
-     * @param  \ReflectionClass  $reflection
-     * @param  string|null  $property
-     * @param  \ReflectionClass  $attributeDeclaringClass
-     * @return bool
-     */
-    protected function propertyOverridesAttribute($target, ReflectionClass $reflection, ?string $property, ReflectionClass $attributeDeclaringClass)
-    {
-        if (is_null($property) || ! $reflection->hasProperty($property)) {
-            return false;
-        }
-
-        $property = $reflection->getProperty($property);
-
-        return $property->isPublic()
-            && $property->isInitialized($target)
-            && $property->getDeclaringClass()->isSubclassOf($attributeDeclaringClass->getName());
     }
 }

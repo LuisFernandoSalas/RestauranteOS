@@ -132,8 +132,6 @@ class Cloud
 
     /**
      * Configure managed queues if applicable.
-     *
-     * @throws \JsonException
      */
     public static function configureManagedQueues(Application $app): void
     {

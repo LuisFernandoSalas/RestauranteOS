@@ -10,7 +10,7 @@ class Delay
     /**
      * Create a new attribute instance.
      *
-     * @param  int  $delay  Seconds to delay the job for.
+     * @param  int  $delay
      */
     public function __construct(public int $delay)
     {

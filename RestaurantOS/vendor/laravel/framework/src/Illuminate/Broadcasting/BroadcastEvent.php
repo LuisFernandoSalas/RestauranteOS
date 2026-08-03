@@ -17,8 +17,6 @@ use ReflectionClass;
 use ReflectionProperty;
 use Throwable;
 
-use function Illuminate\Support\enum_value;
-
 class BroadcastEvent implements ShouldQueue
 {
     use Queueable, ReadsQueueAttributes;
@@ -90,7 +88,7 @@ class BroadcastEvent implements ShouldQueue
     public function handle(BroadcastingFactory $manager)
     {
         $name = method_exists($this->event, 'broadcastAs')
-            ? enum_value($this->event->broadcastAs())
+            ? $this->event->broadcastAs()
             : get_class($this->event);
 
         $channels = Arr::wrap($this->event->broadcastOn());

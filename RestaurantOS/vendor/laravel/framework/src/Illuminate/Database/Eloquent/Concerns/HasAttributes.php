@@ -1486,7 +1486,7 @@ trait HasAttributes
      *
      * @param  string  $key
      * @param  mixed  $value
-     * @return string|null
+     * @return string
      *
      * @throws \RuntimeException
      */

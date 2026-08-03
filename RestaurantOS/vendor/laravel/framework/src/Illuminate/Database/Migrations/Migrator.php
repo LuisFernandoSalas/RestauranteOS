@@ -659,7 +659,7 @@ class Migrator
      *
      * @param  string  $name
      * @param  (callable(): TReturn)  $callback
-     * @return TReturn
+     * @return mixed
      */
     public function usingConnection($name, callable $callback)
     {
