@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="cream">#FBF5EC</color>
+    <color name="ocher">#E08A2B</color>
+    <color name="terracotta_dark">#7A3520</color>
+    <color name="terracotta_medium">#BE5A33</color>
+    <color name="terracotta_red">#C1440E</color>
+    <color name="white">#FFFFFFFF</color>
+    <dimen name="button_height">64dp</dimen>
+    <dimen name="footer_margin">32dp</dimen>
+    <dimen name="form_spacing_vertical">48dp</dimen>
+    <dimen name="icon_size_small">24dp</dimen>
+    <dimen name="input_height">56dp</dimen>
+    <dimen name="input_margin_top">8dp</dimen>
+    <dimen name="label_margin_top">24dp</dimen>
+    <dimen name="logo_margin_top">100dp</dimen>
+    <dimen name="logo_size">150dp</dimen>
+    <dimen name="panel_padding">64dp</dimen>
+    <dimen name="text_size_app_name">32sp</dimen>
+    <dimen name="text_size_button">20sp</dimen>
+    <dimen name="text_size_footer">12sp</dimen>
+    <dimen name="text_size_label">14sp</dimen>
+    <dimen name="text_size_module">18sp</dimen>
+    <dimen name="text_size_sub_module">14sp</dimen>
+    <dimen name="text_size_subtitle">18sp</dimen>
+    <dimen name="text_size_welcome">42sp</dimen>
+    <integer name="grid_span_count">2</integer>
+    <string name="app_name">UsuarioCocina</string>
+    <string name="app_title">RestaurantOS</string>
+    <string name="button_accept">Aceptar</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="button_continue">Continuar</string>
+    <string name="button_login">Ingresar</string>
+    <string name="button_see_later">Ver después</string>
+    <string name="button_verify">Verificar</string>
+    <string name="chef_name">Chef Fernando</string>
+    <string name="dialog_forgot_subtitle">Ingrésalo para poder acceder.</string>
+    <string name="dialog_forgot_title">Código de recuperación enviado al administrador</string>
+    <string name="dialog_success_subtitle">Sesión Iniciada</string>
+    <string name="dialog_success_title">¡Codigo verificado!</string>
+    <string name="footer_text">Acceso restringido a red local\nSolo personal autorizado</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="label_code">Código:</string>
+    <string name="label_pass">Contraseña</string>
+    <string name="label_user">Correo o usuario</string>
+    <string name="login_subtitle">Inicia sesión para continuar</string>
+    <string name="logout_btn_confirm">Salir</string>
+    <string name="logout_confirm_msg">¿Estás seguro de que deseas salir del sistema?</string>
+    <string name="logout_confirm_title">Cerrar sesión</string>
+    <string name="logout_desc">Cerrar sesión</string>
+    <string name="module_title">Módulo de Cocina</string>
+    <string name="new_order_title">¡Nuevo pedido!</string>
+    <string name="order_detail_title">Mesa %1$d — Detalle del pedido</string>
+    <string name="order_general_note_title">Nota general del pedido</string>
+    <string name="order_products_title">Productos del pedido</string>
+    <string name="security_icon_desc">Icono de seguridad</string>
+    <string name="status_pending">PENDIENTE</string>
+    <string name="status_preparing">EN PREPARACIÓN</string>
+    <string name="status_ready">LISTO</string>
+    <string name="sub_module_title">Kitchen Display System</string>
+    <string name="tab_orders">Pedidos</string>
+    <string name="table_label">Mesa %1$d</string>
+    <string name="table_waiter_format">Mesa %1$d · Mesero %2$s</string>
+    <string name="waiter_label">Mesero: %1$s</string>
+    <string name="welcome">Bienvenido</string>
+    <string name="welcome_chef">¡Bienvenido chef!</string>
+    <style name="Base.Theme.UsuarioCocina" parent="Theme.Material3.DayNight.NoActionBar">
+        
+        
+    </style>
+    <style name="Theme.UsuarioCocina" parent="Base.Theme.UsuarioCocina"/>
+</resources>

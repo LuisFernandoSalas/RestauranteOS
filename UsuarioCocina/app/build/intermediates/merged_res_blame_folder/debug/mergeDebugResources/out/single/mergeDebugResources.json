@@ -1,0 +1,158 @@
+[
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_item_prep_detail_row.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\item_prep_detail_row.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_footer_background.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\footer_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-hdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xxhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_pause_product.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_pause_product.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xhdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_circle_placeholder.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\circle_placeholder.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\xml_backup_rules.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\xml\\backup_rules.xml"
+    },
+    {
+        "merged": "com.example.usuariococina.app-debug-48:/layout_activity_preparation_detail.xml.flat",
+        "source": "com.example.usuariococina.app-main-50:/layout/activity_preparation_detail.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-anydpi_ic_launcher.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-anydpi\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-mdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_bg_quantity_circle.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\bg_quantity_circle.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_forgot_password.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_forgot_password.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_activity_orders.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\activity_orders.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\xml_data_extraction_rules.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\xml\\data_extraction_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_bg_edittext_creme.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\bg_edittext_creme.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_item_detail_product.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\item_detail_product.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-hdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_ic_pencil.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\ic_pencil.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_ic_warning.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\ic_warning.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_cancel_order.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_cancel_order.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xxhdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-anydpi_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-anydpi\\ic_launcher_round.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_activity_preparation_detail.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\activity_preparation_detail.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_order_details.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_order_details.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_ic_thumb_up.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\ic_thumb_up.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_new_order.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_new_order.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_item_order_row.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\item_order_row.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_order_completed.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_order_completed.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_dialog_success.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\dialog_success.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xxxhdpi\\ic_launcher.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-mdpi\\ic_launcher_round.webp"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_edittext_background.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\edittext_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_ic_launcher_background.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\ic_launcher_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\drawable\\ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\layout_item_order_card.xml.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\layout\\item_order_card.xml"
+    },
+    {
+        "merged": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-debug-48:\\mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "C:\\Users\\luisf\\.gradle\\daemon\\9.3.1\\com.example.usuariococina.app-main-50:\\mipmap-xxxhdpi\\ic_launcher_round.webp"
+    }
+]
