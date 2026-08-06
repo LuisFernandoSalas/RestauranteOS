@@ -7,17 +7,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DetallePedido extends Model
 {
-    // Estandarizado en plural según la convención y las migraciones exitosas ejecutadas
+    // Estandarizado en singular según tu base de datos
     protected $table = 'detalle_pedido';
 
     protected $fillable = [
         'pedido_id',
         'producto_id',
+        'combo_id',        // <- Novedad: Permite asociar un combo a esta línea
         'cantidad',
-        'precio_unitario', // Obligatorio para congelar el precio histórico del producto
+        'precio_unitario', // Congela el precio del producto o combo_especial
         'subtotal',
         'nota',            // Ej: "Sin cebolla", "bien tostadas" (Crucial para Cocina)
-        'estado'           // Estandarizado: 'pendiente', 'en_preparacion', 'listo', 'entregado', 'cancelado'
+        'estado'           // 'pendiente', 'en_preparacion', 'listo', 'entregado', 'cancelado'
     ];
 
     // Forzar tipos de datos correctos en las respuestas JSON hacia Retrofit / Java HttpClient
@@ -37,10 +38,16 @@ class DetallePedido extends Model
         return $this->belongsTo(Pedido::class);
     }
 
-    // El producto actual asociado al detalle
+    // El producto actual asociado al detalle (null si es un combo)
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    // El combo asociado al detalle (null si es un producto individual)
+    public function combo(): BelongsTo
+    {
+        return $this->belongsTo(Combo::class);
     }
 
     /**
@@ -56,7 +63,6 @@ class DetallePedido extends Model
         parent::boot();
 
         static::creating(function ($detalle) {
-            // Si viene el precio_unitario pero no el subtotal, lo calculamos en backend
             if ($detalle->precio_unitario && $detalle->cantidad) {
                 $detalle->subtotal = $detalle->precio_unitario * $detalle->cantidad;
             }

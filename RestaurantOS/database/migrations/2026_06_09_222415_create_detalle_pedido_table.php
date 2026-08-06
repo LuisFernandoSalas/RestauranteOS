@@ -6,40 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create
-        (
-            'detalle_pedido',
-             function (Blueprint $table) 
-            {
+        // 🚨 Cambiado Schema::table por Schema::create
+        Schema::create('detalle_pedido', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pedido_id')->constrained('pedidos')->onDelete('cascade');
-            $table->foreignId('producto_id')->constrained('productos');
+            
+            // producto_id y combo_id son opcionales entre sí
+            $table->foreignId('producto_id')->nullable()->constrained('productos')->nullOnDelete();
+            $table->foreignId('combo_id')->nullable()->constrained('combos')->nullOnDelete();
+            
             $table->integer('cantidad');
             $table->decimal('precio_unitario', 8, 2);
-            $table->text('nota')->nullable();
-            $table->enum
-            (
-                'status',
-                [
-                    'solicitado',
-                    'cocinando',
-                    'terminado',
-                    'rechazado'
-                ]
-            )->default('solicitado');
-            $table->decimal('subtotal', 10, 2);               
+            $table->decimal('subtotal', 8, 2);
+            $table->string('nota')->nullable();
+            $table->string('estado')->default('pendiente');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('detalle_pedido');

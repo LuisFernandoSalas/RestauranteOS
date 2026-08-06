@@ -11,8 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 🚀 Solo creamos la tabla principal de combos
-        Schema::create('combos', function (Blueprint $table) {
+       Schema::create('combos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
             $table->decimal('precio_especial', 10, 2);
@@ -20,6 +19,7 @@ return new class extends Migration
             $table->date('fecha_fin')->nullable();
             $table->enum('estado', ['activo', 'pausado'])->default('activo');
             $table->timestamps();
+            $table->softDeletes(); // <- Vital para no romper el historial de comandas
         });
     }
 

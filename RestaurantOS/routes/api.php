@@ -7,9 +7,10 @@ use App\Http\Controllers\Api\PedidoController;
 use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\ProductoController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\ComboController;
 use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\V1\PagoController;   // Nuevo motor financiero
-use App\Http\Controllers\Api\V1\CocinaController; // Nuevo motor KDS de Cocina
+use App\Http\Controllers\Api\V1\PagoController;  
+use App\Http\Controllers\Api\V1\CocinaController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mesas', [MesaController::class, 'index']);
     Route::get('/productos', [ProductoController::class, 'index']); 
     Route::get('/productos/{id}', [ProductoController::class, 'show']);
+
+    // ==========================================
+    // 🍽️ 2. COMBOS (Promociones y Paquetes)
+    //========================================
+    // Esto generará automáticamente las rutas GET, POST, PUT, DELETE para los combos
+    Route::apiResource('combos', ComboController::class);
 
     // ==========================================
     // 📲 3. MÓDULO DE MESEROS (Gestión de Comandas)
