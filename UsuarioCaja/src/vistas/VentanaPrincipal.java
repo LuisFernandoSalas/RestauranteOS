@@ -65,8 +65,7 @@ public class VentanaPrincipal extends JFrame {
     // @param usuarioNombre  nombre del usuario logueado
     // @param usuarioRol     rol: Cajero, Administrador, etc.
     // ─────────────────────────────────────────────
-    // 🛠️ CONSTRUCTOR REACOMODADO
-    public VentanaPrincipal(String usuarioNombre, String usuarioRol, String token) {
+    public VentanaPrincipal(String usuarioNombre, String usuarioRol) {
         this.usuarioNombre = usuarioNombre;
         this.usuarioRol    = usuarioRol;
 
@@ -75,17 +74,11 @@ public class VentanaPrincipal extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 🔑 PRIMERO: Instanciamos el panel global pasándole el token directo
-        this.panelMesas = new PanelMesas();
-
-        // 🏗️ SEGUNDO: Construimos lo visual de forma segura
         add(buildSidebar(),      BorderLayout.WEST);
         add(buildContentArea(),  BorderLayout.CENTER);
 
         setVisible(true);
     }
-
-    // 🛠️ ÁREA DE CONTENIDO REPARADA
 
     // ═══════════════════════════════════════════════
     // SIDEBAR
@@ -245,15 +238,12 @@ public class VentanaPrincipal extends JFrame {
         contentPanel = new JPanel(cardLayout);
         contentPanel.setBackground(COLOR_BG);
 
-        // ❌ BORRA la línea que decía: panelMesas = new PanelMesas();
-        // Ya lo creamos arriba en el constructor con su token.
-
+        panelMesas      = new PanelMesas();
         panelHistorial  = new PanelHistorial();
         panelCorteCaja  = new PanelCorteCaja();
         panelCobro      = new PanelCobro();
-        panelCobro.setVentana(this);
+        panelCobro.setVentana(this); // Pasar referencia para poder regresar
 
-        // Agregamos al contenedor (panelMesas ya está vivo y tiene el token)
         contentPanel.add(panelMesas,     "MESAS");
         contentPanel.add(panelHistorial, "HISTORIAL");
         contentPanel.add(panelCorteCaja, "CORTE");
@@ -262,7 +252,6 @@ public class VentanaPrincipal extends JFrame {
         cardLayout.show(contentPanel, "MESAS");
         return contentPanel;
     }
-
 
     // ═══════════════════════════════════════════════
     // NAVEGACIÓN PÚBLICA
@@ -276,27 +265,14 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /** Abre PanelCobro cargando los datos de la mesa */
-    /** Abre PanelCobro preparando la llamada a la API */
-    /*public void abrirCobro(Mesa mesa) {
-        // 🚀 MAÑANA: Haremos la petición a Laravel en este hilo secundario
-        new Thread(() -> {
-            try {
-                // Mañana aquí irá: DetalleCobro detalle = api.CobroService.obtenerDetalle(mesa.getId());
-
-                SwingUtilities.invokeLater(() -> {
-                    // Por esta noche, lo dejamos con valores vacíos para que compile limpio
-                    panelCobro.cargarPedido(
-                            mesa,
-                            "Cargando...",    // Mañana será detalle.getMesero()
-                            0,                // Mañana será detalle.getMinutos()
-                            new ArrayList<>() // Mañana serán los items reales
-                    );
-                    cardLayout.show(contentPanel, "COBRO_MESA");
-                    setNavActivo(btnMesas);
-                });
-            } catch (Exception e) {
-                System.err.println("Error preparando la vista de cobro: " + e.getMessage());
-            }
-        }).start();
-    }*/
+    public void abrirCobro(Mesa mesa) {
+        panelCobro.cargarPedido(
+                mesa,
+                "Hasiel ....",          // TODO (BD): nombre real del mesero
+                45,                     // TODO (BD): minutos reales
+                PanelCobro.itemsDummy() // TODO (BD): items reales de BD
+        );
+        cardLayout.show(contentPanel, "COBRO_MESA");
+        setNavActivo(btnMesas);
+    }
 }

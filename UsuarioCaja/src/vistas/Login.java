@@ -225,44 +225,11 @@ public class Login extends JFrame {
             return;
         }
 
-        // 🚀 Nuestro puente entra en acción en un hilo separado
-        // 🚀 Nuestro puente entra en acción en un hilo separado
-        new Thread(() -> {
-            try {
-                // 1️⃣ Llamamos a nuestro nuevo puente profesional (Usa Gson por dentro)
-                api.AuthService.LoginResponse respuesta = api.AuthService.login(usuario, contrasena);
-
-                // 2️⃣ Guardamos el token en la memoria global
-                api.SessionManager.setToken(respuesta.token);
-
-                System.out.println("✅ Token recibido: " + respuesta.token.substring(0, 15) + "...");
-                System.out.println("✅ Usuario logueado: " + respuesta.user.name + " (Rol: " + respuesta.user.role + ")");
-
-                // 3️⃣ Volvemos al hilo de la interfaz para abrir la ventana de Kevyn
-                java.awt.EventQueue.invokeLater(() -> {
-                    dispose(); // Cierra el login
-
-                    // Le pasamos el NOMBRE REAL, el ROL REAL y el TOKEN a la Ventana Principal
-                    VentanaPrincipal principal = new VentanaPrincipal(
-                            respuesta.user.name,
-                            respuesta.user.role,
-                            respuesta.token
-                    );
-                    principal.setVisible(true);
-                });
-
-            } catch (Exception ex) {
-                // Si Laravel manda error 401 (Credenciales inválidas) o no hay servidor
-                java.awt.EventQueue.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(this,
-                            "Usuario o contraseña incorrectos o error de red.",
-                            "Error de inicio de sesión",
-                            JOptionPane.ERROR_MESSAGE);
-                });
-                ex.printStackTrace(); // Para ver el error en la consola
-            }
-        }).start();
+        // Placeholder: abrir ventana principal y cerrar login
+        dispose();
+        new VentanaPrincipal(usuario, "Cajero");
     }
+
     /**
      * TODO (BD): abrir JDialog de recuperación de contraseña.
      * Enviar token de recuperación por correo.

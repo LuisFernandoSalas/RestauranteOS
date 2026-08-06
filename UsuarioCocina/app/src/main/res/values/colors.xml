@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Palette: Terracota y crema -->
+    <color name="terracotta_dark">#7A3520</color>
+    <color name="terracotta_medium">#BE5A33</color>
+    <color name="ocher">#E08A2B</color>
+    <color name="terracotta_red">#C1440E</color>
+    <color name="cream">#FBF5EC</color>
+</resources>

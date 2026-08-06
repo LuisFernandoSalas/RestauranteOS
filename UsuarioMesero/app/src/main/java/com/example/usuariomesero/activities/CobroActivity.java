@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.usuariomesero.models.ItemOrden;
 import com.example.usuariomesero.adapters.OrdenAdapter;
+import com.example.usuariomesero.models.Mesa;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -69,7 +71,25 @@ public class CobroActivity extends AppCompatActivity {
             tvTitulo.setText(String.format(Locale.getDefault(), "Cobro – Mesa %d", mesaNumero));
         }
 
+        Mesa mesa = getIntent().getParcelableExtra("mesa");
+
         TextView tvMesaInfo = findViewById(R.id.tv_mesa_info_header);
+
+        if (tvMesaInfo != null && mesa != null) {
+            // 1. Obtenemos el número (es int, así que lo formatearemos con %d)
+            int numeroMesa = mesa.getNumero();
+
+            // 2. Obtenemos el texto informativo (ej. el nombre de quien atiende o del cliente)
+            String info = (mesa.getNombreInformacion() != null && !mesa.getNombreInformacion().isEmpty())
+                    ? mesa.getNombreInformacion()
+                    : "Sin información";
+
+            // Opcional: Si en algún momento prefieres mostrar el estado (LIBRE, OCUPADA)...
+            String estado = (mesa.getEstado() != null) ? mesa.getEstado().name() : "DESCONOCIDO";
+
+            // 3. Imprimimos el texto final: "Mesa 1 — Hasiel"
+            tvMesaInfo.setText(String.format(Locale.getDefault(), "Mesa %d — %s", numeroMesa, info));
+        }
 
         tvSubtotal = findViewById(R.id.tv_subtotal_cobro);
         if (tvSubtotal != null) {

@@ -3,112 +3,90 @@ package com.example.usuariomesero.models;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
+/**
+ * Clase de modelo que representa una Mesa conectada a la API.
+ */
 public class Mesa {
 
-    // --- VARIABLES DE COMPATIBILIDAD (Para no romper tu Activity) ---
-    private List<ItemOrden> itemsPedido;
-    private String nombreInformacion;
+    /**
+     * Estados posibles de una mesa mapeados al JSON del servidor.
+     */
+    public enum Estado {
+        @SerializedName("libre")
+        LIBRE,
 
-    // 🚀 El traductor @SerializedName conecta el JSON de Laravel con nuestras variables
+        @SerializedName("ocupada")
+        OCUPADA,
 
-    @SerializedName("id_mesa")
-    private int id; // ID de la base de datos
+        @SerializedName("cobro")
+        COBRO
+    }
 
-    @SerializedName("numero")
+    // 🚨 Asegúrate de que los strings de @SerializedName coincidan EXACTAMENTE
+    // con los nombres de las columnas o keys JSON que devuelve tu API en Laravel.
+
+    @SerializedName("numero") // O "id", dependiendo de tu base de datos
     private int numero;
 
     @SerializedName("estado")
-    private String estadoString; // Laravel manda "libre", "ocupado", "cobro"
+    private Estado estado;
 
-    @SerializedName("total")
-    private double total; // Cambiamos el String de precio por el número real
+    @SerializedName("precio") // Si tu API devuelve el total aquí
+    private String precio;
 
-    @SerializedName("tiempo_min")
-    private int tiempoMin;
+    @SerializedName("items_pedido") // Ajustar si Laravel lo manda como "detalles" o "productos"
+    private List<ItemOrden> itemsPedido;
 
-    @SerializedName("total_actual")
-    private double totalActual;
+    @SerializedName("nombre_informacion")
+    private String nombreInformacion;
 
-    // TODO: Después añadiremos la lista de productos real
-    // private List<ItemOrden> itemsPedido;
+    // --- CONSTRUCTORES ---
+    public Mesa(int numero, Estado estado, String precio) {
+        this(numero, estado, precio, null, null);
+    }
 
-    // --- GETTERS ---
+    public Mesa(int numero, Estado estado, String precio, List<ItemOrden> itemsPedido, String nombreInformacion) {
+        this.numero = numero;
+        this.estado = estado;
+        this.precio = precio;
+        this.itemsPedido = itemsPedido;
+        this.nombreInformacion = nombreInformacion;
+    }
 
-    public int getId() { return id; }
-
-    public int getNumero() { return numero; }
-
-    // Mantenemos tu Enum para que tu Adapter siga funcionando igual
-    public enum Estado { LIBRE, OCUPADA, COBRO }
+    // --- GETTERS Y SETTERS ---
+    public int getNumero() {
+        return numero;
+    }
 
     public Estado getEstado() {
-        if (estadoString == null) return Estado.LIBRE;
-        switch (estadoString.toLowerCase()) {
-            case "ocupada": return Estado.OCUPADA;
-            case "cobrar": return Estado.COBRO;
-            default: return Estado.LIBRE;
-        }
+        return estado;
     }
-
-    public String getPrecioFormateado() {
-        if (total <= 0) return null;
-        return String.format("$ %.2f", total);
-    }
-
-    public double getTotalActual() {
-        return totalActual;
-    }
-
-    // --- SETTERS ---
 
     public void setEstado(Estado estado) {
-        if (estado == Estado.LIBRE) this.estadoString = "libre";
-        else if (estado == Estado.OCUPADA) this.estadoString = "ocupada";
-        else if (estado == Estado.COBRO) this.estadoString = "cobrar";
+        this.estado = estado;
+    }
+
+    public String getPrecio() {
+        return precio;
     }
 
     public void setPrecio(String precio) {
-        try {
-            if (precio != null && !precio.isEmpty()) {
-                // Le quitamos el "$" y las comas para que Java lo guarde como número (double)
-                String valorPuro = precio.replace("$", "").replace(",", "").trim();
-                this.total = Double.parseDouble(valorPuro);
-            } else {
-                this.total = 0.0;
-            }
-        } catch (Exception e) {
-            this.total = 0.0;
-        }
-    }
-
-    public void setItemsPedido(List<ItemOrden> itemsPedido) {
-        this.itemsPedido = itemsPedido;
+        this.precio = precio;
     }
 
     public List<ItemOrden> getItemsPedido() {
         return itemsPedido;
     }
 
-    public void setNombreInformacion(String nombreInformacion) {
-        this.nombreInformacion = nombreInformacion;
-    }
-
-    public void setTotalActual(double totalActual) {
-        this.totalActual = totalActual;
-    }
-
-    // El estado del pedido que viene desde el controlador de José
-    @SerializedName("pedido_status")
-    private String pedidoStatus; // "Activo", "en_preparacion", "listo", "entregado"
-
-    public boolean esCobroPermitido() {
-        if (pedidoStatus == null) return false;
-
-        // 🚀 Regla de negocio: Solo permitimos cobrar si la cocina ya lo marcó como 'listo' o si ya fue 'entregado'
-        return pedidoStatus.equalsIgnoreCase("listo");
+    public void setItemsPedido(List<ItemOrden> itemsPedido) {
+        this.itemsPedido = itemsPedido;
     }
 
     public String getNombreInformacion() {
         return nombreInformacion;
+    }
+
+    public void setNombreInformacion(String nombreInformacion) {
+        this.nombreInformacion = nombreInformacion;
     }
 }

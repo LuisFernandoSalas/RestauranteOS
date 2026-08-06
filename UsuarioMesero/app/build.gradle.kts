@@ -52,12 +52,10 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    // Retrofit (Para hacer peticiones HTTP a Laravel)
+    // Retrofit y conversor de JSON (Gson)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-
-    // Gson Converter (Para traducir el JSON a tus Modelos automáticamente)
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-    // OkHttp Logging (Opcional pero nivel Senior: Para ver los JSON crudos en el Logcat)
+// Interceptor para ver las peticiones HTTP en el Logcat (Vital para debugear)
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

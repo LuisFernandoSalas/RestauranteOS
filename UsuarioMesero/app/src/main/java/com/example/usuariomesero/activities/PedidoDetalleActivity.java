@@ -1,5 +1,16 @@
 package com.example.usuariomesero.activities;
 
+import com.example.usuariomesero.R;
+import com.example.usuariomesero.models.Producto;
+import com.example.usuariomesero.models.ItemOrden;
+import com.example.usuariomesero.models.GuardarPedidoRequest;
+import com.example.usuariomesero.adapters.ProductoAdapter;
+import com.example.usuariomesero.adapters.OrdenAdapter;
+import com.example.usuariomesero.models.ProductoResponse;
+import com.example.usuariomesero.network.ApiService;
+import com.example.usuariomesero.network.RetrofitClient;
+import com.example.usuariomesero.utils.SesionManager;
+
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -9,28 +20,21 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.usuariomesero.R;
-import com.example.usuariomesero.adapters.OrdenAdapter;
-import com.example.usuariomesero.adapters.ProductoAdapter;
-import com.example.usuariomesero.api.ApiClient;
-import com.example.usuariomesero.api.ApiResponse;
-import com.example.usuariomesero.api.ApiService;
-import com.example.usuariomesero.models.ItemOrden;
-import com.example.usuariomesero.models.Producto;
-import com.example.usuariomesero.models.ItemOrdenRequest; // 🚀 Importado
-import com.example.usuariomesero.models.OrdenRequest;     // 🚀 Importado
-import com.example.usuariomesero.models.RespuestaEnvio;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PedidoDetalleActivity extends AppCompatActivity {
 
@@ -41,14 +45,20 @@ public class PedidoDetalleActivity extends AppCompatActivity {
     private List<Producto> listaProductosFiltrada;
     private List<ItemOrden> listaOrden;
     private TextView tvTotal, tvMesaTitulo;
-    private String categoriaSeleccionada = "Platos";
+    private String categoriaSeleccionada = "Platos fuertes";
+
+    private int mesaId;
+    private int mesaNumero;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        cargarProductosDesdeServidor();
         setContentView(R.layout.activity_pedido_detalle);
 
-        int mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
+        // Obtenemos los datos pasados desde la pantalla de Mesas
+        mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
+        mesaId = getIntent().getIntExtra("mesa_id", mesaNumero); // ID para la BD de Laravel
 
         tvMesaTitulo = findViewById(R.id.tv_mesa_titulo);
         tvMesaTitulo.setText(String.format(Locale.getDefault(), "Mesa %d - Pedido", mesaNumero));
@@ -59,95 +69,61 @@ public class PedidoDetalleActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
+        // 👇 AHORA EJECUTA EL ENVÍO REAL A LARAVEL EN LUGAR DE SOLO MOSTRAR EL DIÁLOGO 👇
         findViewById(R.id.btn_mandar_orden).setOnClickListener(v -> {
             if (listaOrden.isEmpty()) {
                 Toast.makeText(this, "Agrega productos a la orden primero", Toast.LENGTH_SHORT).show();
             } else {
-                // 🚀 En lugar de solo mostrar el diálogo, lanzamos la orden a Laravel
-                enviarOrdenALaravel();
+                enviarPedidoServidor();
             }
         });
 
         setupRecyclerViews();
+        filtrarProductos(categoriaSeleccionada);
         setupCategoryButtons();
-        cargarMenuDesdeAPI();
     }
 
-    // 🚀 NUEVO MÉTODO: Convierte la orden a JSON y la manda por POST
-    private void enviarOrdenALaravel() {
-        int mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
-        List<ItemOrdenRequest> itemsParaEnviar = new ArrayList<>();
+    private void enviarPedidoServidor() {
+        // 1. Generar UUID único para la idempotencia de tu backend
+        String clientUuid = UUID.randomUUID().toString();
 
-        // 1. Traducimos tu lista de Android a la lista limpia para Laravel
+        // 2. Mapear los productos de la lista actual de Android al formato de Laravel
+        List<GuardarPedidoRequest.ProductoItem> productosItem = new ArrayList<>();
         for (ItemOrden item : listaOrden) {
-            itemsParaEnviar.add(new ItemOrdenRequest(
-                    item.getProducto().getId(), // Tu clase Producto debe tener el método getId()
+            productosItem.add(new GuardarPedidoRequest.ProductoItem(
+                    item.getProducto().getId(), // ID real del producto en MySQL
                     item.getCantidad(),
-                    item.getNota() != null ? item.getNota() : ""
+                    item.getNota()
             ));
         }
 
-        // 2. Metemos todo al "sobre" principal
-        OrdenRequest ordenRequest = new OrdenRequest(mesaNumero, itemsParaEnviar);
+        GuardarPedidoRequest request = new GuardarPedidoRequest(clientUuid, mesaId, productosItem);
 
-        // 3. Disparamos a Laravel
-        ApiService api = ApiClient.getService(this);
-        api.enviarComandaACocina(ordenRequest).enqueue(new retrofit2.Callback<RespuestaEnvio>() { // 🚀 CAMBIO AQUÍ
+        // 3. Preparar Token de Autenticación Sanctum
+        SesionManager sesionManager = new SesionManager(this);
+        String token = "Bearer " + sesionManager.getAuthToken();
+
+        // 4. Petición HTTP mediante Retrofit
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.enviarPedido(token, request).enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(retrofit2.Call<RespuestaEnvio> call, retrofit2.Response<RespuestaEnvio> response) { // 🚀 CAMBIO AQUÍ
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
+                    // ¡Éxito en Laravel! mostramos el diálogo y notificamos a la pantalla de Mesas
                     mostrarDialogoOrdenEnviada();
                 } else {
-                    if (response.errorBody() != null) {
-                        try {
-                            String errorDeLaravel = response.errorBody().string();
-                            android.util.Log.e("ERROR_422_DETALLE", errorDeLaravel);
-                        } catch (java.io.IOException e) {
-                            e.printStackTrace();
-                        }
+                    try {
+                        String error = response.errorBody() != null ? response.errorBody().string() : "Error " + response.code();
+                        Toast.makeText(PedidoDetalleActivity.this, "Error de Laravel: " + error, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(PedidoDetalleActivity.this, "Error al procesar la comanda", Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(PedidoDetalleActivity.this, "Error de servidor: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(retrofit2.Call<RespuestaEnvio> call, Throwable t) { // 🚀 CAMBIO AQUÍ
-                Toast.makeText(PedidoDetalleActivity.this, "Fallo de red al enviar el pedido", Toast.LENGTH_SHORT).show();
-                android.util.Log.e("ERROR_ENVIO", t.getMessage());
-            }
-        });
-    }
-
-    private void cargarMenuDesdeAPI() {
-        ApiService api = ApiClient.getService(this);
-
-        api.obtenerProductos().enqueue(new retrofit2.Callback<ApiResponse>() {
-            @Override
-            public void onResponse(retrofit2.Call<ApiResponse> call, retrofit2.Response<ApiResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-
-                    List<Producto> productosServidor = response.body().getData();
-
-                    if (productosServidor != null) {
-                        listaProductosCompleta.clear();
-
-                        for (Producto p : productosServidor) {
-                            if ("activo".equalsIgnoreCase(p.getStatus())) {
-                                p.setImagenResId(com.example.usuariomesero.R.drawable.ic_launcher_background);
-                                listaProductosCompleta.add(p);
-                            }
-                        }
-
-                        filtrarProductos(categoriaSeleccionada);
-                    }
-                } else {
-                    Toast.makeText(PedidoDetalleActivity.this, "Error en el servidor: " + response.code(), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<ApiResponse> call, Throwable t) {
-                Toast.makeText(PedidoDetalleActivity.this, "Fallo de red al conectar el menú", Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(PedidoDetalleActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -159,7 +135,7 @@ public class PedidoDetalleActivity extends AppCompatActivity {
             agregarAOrden(producto);
         });
 
-        int spanCount = 2;
+        int spanCount = 2; // Fixed for Tablet
         rvProductos.setLayoutManager(new GridLayoutManager(this, spanCount));
         rvProductos.setAdapter(productoAdapter);
 
@@ -185,12 +161,9 @@ public class PedidoDetalleActivity extends AppCompatActivity {
         Button btnBebidas = findViewById(R.id.btn_categoria_bebidas);
         Button btnPostres = findViewById(R.id.btn_categoria_postres);
 
+        // 👇 Usamos "Platos fuertes" para coincidir con la BD
         if (btnEntradas != null) btnEntradas.setOnClickListener(v -> updateCategorySelection("Entradas", btnEntradas, btnPlatos, btnBebidas, btnPostres));
-
-        // ⚠️ OJO AQUÍ: Tienes "Platos fuertes" en el click, pero abajo lo inicializas como "Platos".
-        // Si tu base de datos dice "Platos", cambia esto a "Platos" para que no se blanquee la pantalla.
         if (btnPlatos != null) btnPlatos.setOnClickListener(v -> updateCategorySelection("Platos fuertes", btnEntradas, btnPlatos, btnBebidas, btnPostres));
-
         if (btnBebidas != null) btnBebidas.setOnClickListener(v -> updateCategorySelection("Bebidas", btnEntradas, btnPlatos, btnBebidas, btnPostres));
         if (btnPostres != null) btnPostres.setOnClickListener(v -> updateCategorySelection("Postres", btnEntradas, btnPlatos, btnBebidas, btnPostres));
 
@@ -222,13 +195,12 @@ public class PedidoDetalleActivity extends AppCompatActivity {
     private void filtrarProductos(String categoria) {
         categoriaSeleccionada = categoria;
         listaProductosFiltrada.clear();
-
         for (Producto p : listaProductosCompleta) {
-            if (p.getCategoria() != null && p.getCategoria().getNombre().equalsIgnoreCase(categoria)) {
+            String catProd = p.getCategoria();
+            if (catProd != null && (catProd.equalsIgnoreCase(categoria) || catProd.toLowerCase().contains(categoria.toLowerCase()))) {
                 listaProductosFiltrada.add(p);
             }
         }
-
         productoAdapter.notifyDataSetChanged();
     }
 
@@ -289,7 +261,6 @@ public class PedidoDetalleActivity extends AppCompatActivity {
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
         TextView tvMsg = dialog.findViewById(R.id.tv_order_sent_message);
-        int mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
         tvMsg.setText(String.format(Locale.getDefault(), "El pedido de Mesa %d fue\nrecibido por cocina.", mesaNumero));
 
         Button btnVolver = dialog.findViewById(R.id.btn_back_to_mesas);
@@ -302,7 +273,6 @@ public class PedidoDetalleActivity extends AppCompatActivity {
 
             String itemsJson = new Gson().toJson(listaOrden);
             resultIntent.putExtra("items_orden", itemsJson);
-
             resultIntent.putExtra("nombre_informacion", "Hasiel");
 
             setResult(RESULT_OK, resultIntent);
@@ -310,5 +280,34 @@ public class PedidoDetalleActivity extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+
+    private void cargarProductosDesdeServidor() {
+        SesionManager sesionManager = new SesionManager(this);
+        String token = "Bearer " + sesionManager.getAuthToken();
+
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.getProductos(token).enqueue(new Callback<ProductoResponse>() {
+            @Override
+            public void onResponse(Call<ProductoResponse> call, Response<ProductoResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    // Extraemos la lista dentro de "data"
+                    List<Producto> productos = response.body().getData();
+
+                    if (productos != null) {
+                        listaProductosCompleta.clear();
+                        listaProductosCompleta.addAll(productos);
+                        filtrarProductos(categoriaSeleccionada);
+                    }
+                } else {
+                    Toast.makeText(PedidoDetalleActivity.this, "Error al cargar el menú", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProductoResponse> call, Throwable t) {
+                Toast.makeText(PedidoDetalleActivity.this, "Fallo de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -8,14 +8,15 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.usuariomesero.R;
-import com.example.usuariomesero.activities.MesasActivity;
-import com.example.usuariomesero.api.ApiClient;
-import com.example.usuariomesero.api.ApiService;
-import com.example.usuariomesero.utils.TokenManager;
-import com.google.gson.JsonObject;
+import com.example.usuariomesero.models.LoginRequest;
+import com.example.usuariomesero.models.LoginResponse;
+import com.example.usuariomesero.network.ApiService;
+import com.example.usuariomesero.network.RetrofitClient;
+import com.example.usuariomesero.utils.SesionManager;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,31 +28,24 @@ public class MainActivity extends AppCompatActivity {
     private Button btnLogin;
     private TextView tvForgotPassword;
     private ProgressBar pbLoading;
-
-    private TokenManager tokenManager;
+    private SesionManager sesionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // Asegúrate de que este sea el nombre de tu XML
+        setContentView(R.layout.activity_main);
 
-        // Inicializamos las vistas con tu método
-        initView();
+        // Ahora sí, esta línea ya no te marcará error:
+        sesionManager = new SesionManager(this);
 
-        tokenManager = new TokenManager(this);
-
-        // Comprobamos si el mesero ya había iniciado sesión antes
-        if (tokenManager.obtenerToken() != null) {
-            irAMesas();
+        // --- AUTO-LOGIN ---
+        if (sesionManager.getAuthToken() != null) {
+            irAMesas(sesionManager.getAuthToken());
+            return;
         }
 
-        // Acción del botón Login
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                realizarLogin();
-            }
-        });
+        initView();
+        setupListeners();
     }
 
     private void initView() {
@@ -62,65 +56,77 @@ public class MainActivity extends AppCompatActivity {
         pbLoading = findViewById(R.id.pb_loading);
     }
 
-    private void realizarLogin() {
-        String username = etUser.getText().toString().trim();
+    private void setupListeners() {
+        btnLogin.setOnClickListener(v -> attemptLogin());
+        tvForgotPassword.setOnClickListener(v ->
+                Toast.makeText(MainActivity.this, "Función de recuperación en desarrollo", Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    private void attemptLogin() {
+        String user = etUser.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Por favor llena todos los campos", Toast.LENGTH_SHORT).show();
+        if (user.isEmpty()) {
+            etUser.setError("Por favor, ingresa tu usuario");
+            return;
+        }
+        if (password.isEmpty()) {
+            etPassword.setError("Por favor, ingresa tu contraseña");
             return;
         }
 
-        // 🎨 MEJORA VISUAL: Ocultamos el botón y mostramos tu circulito de carga
-        btnLogin.setVisibility(View.INVISIBLE);
+        performAuthentication(user, password);
+    }
+
+    private void performAuthentication(final String user, String password) {
+        btnLogin.setEnabled(false);
         pbLoading.setVisibility(View.VISIBLE);
 
-        // Preparamos el JSON que le vamos a enviar a Laravel
-        // OJO: Asumo que tu backend de Laravel espera la variable "email"
-        JsonObject credenciales = new JsonObject();
-        credenciales.addProperty("username", username);
-        credenciales.addProperty("password", password);
+        ApiService apiService = RetrofitClient.getClient(null).create(ApiService.class);
+        LoginRequest request = new LoginRequest(user, password);
 
-        // Hacemos la llamada a la API usando Retrofit
-        ApiService api = ApiClient.getService(this);
-        api.login(credenciales).enqueue(new Callback<JsonObject>() {
-
+        apiService.login(request).enqueue(new Callback<LoginResponse>() {
             @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                // Restauramos la vista (ocultamos la carga, mostramos el botón)
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 pbLoading.setVisibility(View.GONE);
-                btnLogin.setVisibility(View.VISIBLE);
+                btnLogin.setEnabled(true);
 
                 if (response.isSuccessful() && response.body() != null) {
-                    // ¡Éxito! Laravel nos respondió con el Token
-                    String token = response.body().get("access_token").getAsString();
+                    // ¡Éxito!
+                    String token = response.body().getToken();
+                    String nombreUsuario = response.body().getUser().getName();
 
-                    // Guardamos el token de forma segura en el dispositivo
-                    tokenManager.guardarToken(token);
-
-                    Toast.makeText(MainActivity.this, "¡Bienvenido!", Toast.LENGTH_SHORT).show();
-                    irAMesas();
+                    sesionManager.saveAuthToken(token);
+                    irAMesas(nombreUsuario);
                 } else {
-                    // Error de credenciales incorrectas (Error 401)
-                    Toast.makeText(MainActivity.this, "Usuario o contraseña incorrectos", Toast.LENGTH_LONG).show();
+                    // AQUÍ CAPTURAMOS EL ERROR DE LARAVEL
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Error vacío";
+                        android.util.Log.e("LOGIN_ERROR", "Código HTTP: " + response.code() + " - Body: " + errorBody);
+                    } catch (Exception e) {
+                        android.util.Log.e("LOGIN_ERROR", "Error al leer el body: " + e.getMessage());
+                    }
+
+                    Toast.makeText(MainActivity.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-                // Error de red
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
                 pbLoading.setVisibility(View.GONE);
-                btnLogin.setVisibility(View.VISIBLE);
-                Toast.makeText(MainActivity.this, "Error de conexión con el servidor", Toast.LENGTH_LONG).show();
-                System.err.println("Error de red: " + t.getMessage());
+                btnLogin.setEnabled(true);
+
+                // AQUÍ CAPTURAMOS ERRORES DE RED (Timeout, sin internet, etc.)
+                android.util.Log.e("LOGIN_ERROR", "Fallo de red o conversión: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Error de conexión", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void irAMesas() {
-        // Asumo que tu siguiente pantalla se llama MesasActivity. 
-        // Cámbialo si le pusiste otro nombre.
-        Intent intent = new Intent(this, MesasActivity.class);
+    private void irAMesas(String nombreUsuario) {
+        Intent intent = new Intent(MainActivity.this, MesasActivity.class);
+        intent.putExtra("usuario_nombre", nombreUsuario);
         startActivity(intent);
         finish();
     }

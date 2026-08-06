@@ -245,4 +245,33 @@ class PedidoController extends Controller
 
         return response()->json(['status' => 'success', 'message' => 'Pedido eliminado de forma lógica (auditable)']);
     }
+
+    /**
+     * GET /api/pedidos/mesa/{mesa_id}/activo
+     * Recupera el pedido activo de una mesa (para restaurar estado en Android)
+     */
+    public function porMesa($mesa_id): JsonResponse
+    {
+        $pedido = Pedido::with(['detalles.producto', 'mesero:id,name', 'mesa:id,numero'])
+            ->where('mesa_id', $mesa_id)
+            ->whereNotIn('estado', ['pagado', 'cancelado'])
+            ->latest()
+            ->first();
+
+        if (!$pedido) {
+            return response()->json([
+                'status'  => 'empty',
+                'message' => 'Mesa libre / Sin pedido activo',
+                'data'    => null
+            ], 200);
+        }
+
+        $pedidoArray = $pedido->toArray();
+        $pedidoArray['total'] = $pedido->total_calculado;
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $pedidoArray
+        ], 200);
+    }
 }

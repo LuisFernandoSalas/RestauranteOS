@@ -17,7 +17,6 @@ use App\Http\Controllers\Api\V1\CocinaController;
 | API Routes
 |--------------------------------------------------------------------------
 */
-
 // --- ACCESO PÚBLICO / LOGIN ---
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -79,4 +78,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cambiado de delete absoluto a deshabilitación controlada o softdelete si aplica
     Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
     Route::get('/dashboard/reportes', [ReportController::class, 'getDashboardData']);
-});
+
+
+
+    Route::middleware('auth:sanctum')->group(function () {
+        // Tus rutas existentes...
+        
+        // Ruta para consultar el pedido activo de una mesa
+        Route::get('/pedidos/mesa/{mesa_id}/activo', [PedidoController::class, 'porMesa']);
+    });
+
+
+
+    });

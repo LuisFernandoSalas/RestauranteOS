@@ -1,7 +1,0 @@
-com.example.usuariococina.app-pngs-0 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\build\generated\res\pngs\debug
-com.example.usuariococina.app-updated_navigation_xml-1 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\build\generated\updated_navigation_xml\debug
-com.example.usuariococina.app-packageDebugResources-2 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.example.usuariococina.app-packageDebugResources-3 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.example.usuariococina.app-debug-4 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.example.usuariococina.app-debug-5 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\src\debug\res
-com.example.usuariococina.app-main-6 C:\Users\luisf\Documents\UTH portafolio\Proyect_RestaurantOS\UsuarioCocina\app\src\main\res

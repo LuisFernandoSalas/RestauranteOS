@@ -3,6 +3,7 @@ package com.example.usuariomesero.models;
 import com.google.gson.annotations.SerializedName;
 
 public class Producto {
+
     @SerializedName("id")
     private int id;
 
@@ -12,41 +13,44 @@ public class Producto {
     @SerializedName("precio")
     private double precio;
 
-    @SerializedName("categoria_id")
-    private int categoriaId;
+    // 👇 Mapea el objeto JSON de la categoría de Laravel
+    @SerializedName("categoria")
+    private CategoriaObjeto categoria;
 
-    @SerializedName("estado")
-    private String status;
+    // Clase interna para leer la estructura {"id": 2, "nombre": "..."}
+    public static class CategoriaObjeto {
+        @SerializedName("id")
+        private int id;
 
-    // Guardamos una imagen por defecto temporal ya que no viene de la base de datos
-    private int imagenResId;
-    private Categoria categoria; // 🚀 El nuevo objeto que manda Laravel
+        @SerializedName("nombre")
+        private String nombre;
 
-    public Producto(int id, String nombre, double precio, int categoriaId, String status) {
-        this.id = id;
-        this.nombre = nombre;
-        this.precio = precio;
-        this.categoriaId = categoriaId;
-        this.status = status;
+        public int getId() {
+            return id;
+        }
+
+        public String getNombre() {
+            return nombre;
+        }
     }
 
-    public int getId() { return id; }
-    public String getNombre() { return nombre; }
-    public double getPrecio() { return precio; }
-    public int getCategoriaId() { return categoriaId; }
-    public String getStatus() { return status; }
-
-    // Le asignamos un icono de comida genérico de tus drawables para que no salga vacío
-    public int getImagenResId() {
-        // Aquí puedes poner un drawable genérico tuyo (ej. R.drawable.ic_food o un switch por categoriaId)
-        return imagenResId;
+    public int getId() {
+        return id;
     }
 
-    public Categoria getCategoria() {
-        return categoria;
+    public String getNombre() {
+        return nombre;
     }
 
-    public void setImagenResId(int imagenResId) {
-        this.imagenResId = imagenResId;
+    public double getPrecio() {
+        return precio;
+    }
+
+    // Retorna el nombre directo de la categoría para que la Activity no falle
+    public String getCategoria() {
+        if (categoria != null && categoria.getNombre() != null) {
+            return categoria.getNombre();
+        }
+        return "";
     }
 }
