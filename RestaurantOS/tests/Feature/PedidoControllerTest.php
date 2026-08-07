@@ -9,6 +9,7 @@ use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\Receta;
 use App\Models\User;
+use App\Models\DetallePedido;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -233,5 +234,64 @@ class PedidoControllerTest extends TestCase
         $response = $this->postJson('/api/pedidos', $payload);
 
         $response->assertStatus(422);
+    }
+
+    public function test_puede_recuperar_el_pedido_activo_de_una_mesa()
+    {
+        // 1. Crear producto e insumo
+        [$producto] = $this->crearProductoConInsumo('Taco al Pastor', 20.00, 500, 50);
+
+        // 2. Crear pedido activo en estado 'en_preparacion'
+        $pedido = Pedido::create([
+            'client_uuid' => Str::uuid()->toString(),
+            'mesa_id'     => $this->mesa->id,
+            'user_id'     => $this->user->id,
+            'estado'      => 'en_preparacion',
+        ]);
+
+        DetallePedido::create([
+            'pedido_id'       => $pedido->id,
+            'producto_id'     => $producto->id,
+            'cantidad'        => 2,
+            'precio_unitario' => 20.00,
+            'subtotal'        => 40.00,
+        ]);
+
+        // 3. Consultar endpoint
+        $response = $this->getJson("/api/pedidos/mesa/{$this->mesa->id}/activo");
+
+        // 4. Aseveraciones
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status' => 'success',
+                     'data'   => [
+                         'id'      => $pedido->id,
+                         'mesa_id' => $this->mesa->id,
+                         'estado'  => 'en_preparacion',
+                         'total'   => 40.00,
+                     ]
+                 ]);
+    }
+
+    public function test_retorna_empty_si_la_mesa_no_tiene_pedido_activo_o_esta_pagado()
+    {
+        // Crear un pedido finalizado/pagado para la mesa
+        Pedido::create([
+            'client_uuid' => Str::uuid()->toString(),
+            'mesa_id'     => $this->mesa->id,
+            'user_id'     => $this->user->id,
+            'estado'      => 'pagado',
+        ]);
+
+        // Consultar el endpoint de mesa activa
+        $response = $this->getJson("/api/pedidos/mesa/{$this->mesa->id}/activo");
+
+        // Debe indicar que la mesa está libre
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status'  => 'empty',
+                     'message' => 'Mesa libre / Sin pedido activo',
+                     'data'    => null
+                 ]);
     }
 }

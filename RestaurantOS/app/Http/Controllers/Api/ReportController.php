@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pedido;
-use App\Models\Pago;
-use App\Models\Insumo;
 use App\Models\DetallePedido;
+use App\Models\Insumo;
+use App\Models\Pago;
+use App\Models\Pedido;
+use App\Models\User;
+use App\Models\Mesa;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
@@ -17,83 +20,169 @@ class ReportController extends Controller
      * GET /api/dashboard/reportes
      * Sincroniza las maquetas de gráficas y tablas con los datos reales del ecosistema.
      */
-    public function getDashboardData(): JsonResponse
+    public function getDashboardData()
     {
-        $hoy = Carbon::today();
+        $hoy = now()->today();
+        $inicioSemana = now()->startOfWeek();
 
-        // 1. RESUMEN GENERAL (Utilizando las tablas reales de Restaurant OS)
-        $ventasTotales   = (float) Pago::sum('monto_recibido');
-        $propinasTotales = (float) Pago::sum('propina');
-        $ordenesTotales  = Pedido::count();
-        // Contamos las solicitudes de factura electrónica (CFDI) marcadas en caja
-        $cfdisEmitidos   = Pago::where('requiere_factura', true)->count();
+        // 1. Resumen
+        $totalVentasHoy = Pago::whereDate('created_at', $hoy)->sum('monto_recibido');
+        $pedidosActivos = Pedido::whereIn('estado', ['pendiente', 'en_proceso', 'listo'])->count();
+        $mesasOcupadas = Mesa::where('estado', 'ocupada')->count();
+        $alertasStock = Insumo::whereColumn('stock_actual', '<=', 'stock_minimo')->count();
 
-        $resumen = [
-            'ventas_totales'   => $ventasTotales,
-            'ordenes_totales'  => $ordenesTotales,
-            'propinas_totales' => $propinasTotales,
-            'cfdis_emitidos'   => $cfdisEmitidos,
+        // 2. Datos diarios (Compatible con SQLite y MySQL)
+        $pagosSemana = Pago::where('created_at', '>=', $inicioSemana)->get();
+        
+        $diasEspaniol = [
+            1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles',
+            4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'
         ];
 
-        // 2. DATOS DIARIOS (Para gráficas de barra y de área histórica)
-        $datosDiarios = Pago::select(
-            DB::raw('DAYNAME(created_at) as dia'),
-            DB::raw('SUM(monto_recibido) as ventas'),
-            DB::raw('SUM(propina) as propina'),
-            DB::raw('COUNT(DISTINCT pedido_id) as mesas')
-        )
-            ->groupBy('dia')
-            ->orderBy(DB::raw('FIELD(dia, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")'))
+        $datosDiarios = $pagosSemana->groupBy(function ($pago) {
+            return $pago->created_at->format('N'); // 1 (Lunes) a 7 (Domingo)
+        })->map(function ($grupo, $diaNum) use ($diasEspaniol) {
+            return [
+                'dia' => $diasEspaniol[$diaNum],
+                'ventas' => (float) $grupo->sum('monto_recibido'),
+                'propina' => (float) $grupo->sum('propina'),
+                'mesas' => $grupo->pluck('pedido_id')->unique()->count(),
+            ];
+        })->values();
+
+        // 3. Métodos de pago
+        $metodosPago = Pago::selectRaw('metodo_pago, count(*) as cantidad, sum(monto_recibido) as total')
+            ->groupBy('metodo_pago')
             ->get();
 
-        // 3. MÉTODOS DE PAGO DEL DÍA (Corte de caja preciso)
-        $totalDia = Pago::whereDate('created_at', $hoy)->sum('monto_recibido') ?: 1; // Evitar división por cero
-        
-        $metodosPago = Pago::whereDate('created_at', $hoy)
-            ->select('metodo_pago as tipo', DB::raw('SUM(monto_recibido) as monto'))
-            ->groupBy('metodo_pago')
-            ->get()
-            ->map(function ($item) use ($totalDia) {
-                $item->monto = (float) $item->monto;
-                $item->porcentaje = round(($item->monto / $totalDia) * 100, 1);
-                return $item;
-            });
-
-        // 4. 🚀 TOP 5 PRODUCTOS MÁS VENDIDOS (Como pide tu slide de "Efficiency Metrics")
-        $topProductos = DetallePedido::select('producto_id', DB::raw('SUM(cantidad) as total_unidades'))
-            ->whereHas('pedido', function ($query) {
-                $query->where('estado', 'entregado'); // Solo sumamos ventas completadas con éxito
-            })
+        // 4. Top Productos
+        $topProductos = DetallePedido::selectRaw('producto_id, sum(cantidad) as total_vendido, sum(subtotal) as total_ingresos')
+            ->with('producto:id,nombre')
             ->groupBy('producto_id')
-            ->with('producto:id,nombre,precio')
-            ->orderBy('total_unidades', 'desc')
+            ->orderByDesc('total_vendido')
             ->take(5)
             ->get();
 
-        // 5. 📦 INVENTARIO CRÍTICO (Alerta de desabasto / Función 86 preventiva de administración)
-        // Muestra insumos cuyo stock_actual esté en un nivel igual o inferior a su stock_minimo
-        $inventarioCritico = Insumo::select('id', 'nombre', 'stock_actual', 'unidad_medida')
-            ->whereRaw('stock_actual <= 5.00') // Asumiendo un stock mínimo estándar de alerta
-            ->orderBy('stock_actual', 'asc')
+        // 5. Inventario Crítico
+        $inventarioCritico = Insumo::whereColumn('stock_actual', '<=', 'stock_minimo')
+            ->take(5)
             ->get();
 
-        // 6. 📉 AUDITORÍA DE PÉRDIDAS POR CANCELACIONES (Mermas del día)
-        $mermasHoy = (float) Pedido::onlyTrashed() // Captura registros eliminados por SoftDelete
-            ->whereDate('deleted_at', $hoy)
-            ->get()
-            ->sum('total_calculado');
-
-        // 7. RESPUESTA JSON TOTALIZADA
         return response()->json([
-            'status'             => 'success',
-            'resumen'            => $resumen,
-            'datos_diarios'      => $datosDiarios,
-            'metodos_pago'       => $metodosPago,
-            'top_productos'      => $topProductos,
+            'status' => 'success',
+            'resumen' => [
+                'ventas_hoy' => (float) $totalVentasHoy,
+                'pedidos_activos' => $pedidosActivos,
+                'mesas_ocupadas' => $mesasOcupadas,
+                'alertas_stock' => $alertasStock,
+            ],
+            'datos_diarios' => $datosDiarios,
+            'metodos_pago' => $metodosPago,
+            'top_productos' => $topProductos,
             'inventario_critico' => $inventarioCritico,
-            'auditoria'          => [
-                'mermas_cancelaciones_hoy' => $mermasHoy
+            'auditoria' => []
+        ]);
+    }
+
+    /**
+     * GET /api/reportes/ventas?fecha_inicio=X&fecha_fin=Y
+     * Total de ingresos recaudados en un periodo determinado.
+     */
+    public function ventas(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fecha_inicio' => 'required|date',
+            'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
+        ]);
+
+        $fechaInicio = $request->fecha_inicio . ' 00:00:00';
+        $fechaFin    = $request->fecha_fin . ' 23:59:59';
+
+        $totalIngresos  = (float) Pago::whereBetween('created_at', [$fechaInicio, $fechaFin])->sum('monto_recibido');
+        $totalPropinas  = (float) Pago::whereBetween('created_at', [$fechaInicio, $fechaFin])->sum('propina');
+        $totalComandas  = Pedido::where('estado', 'pagado')->whereBetween('created_at', [$fechaInicio, $fechaFin])->count();
+        $promedioComanda = $totalComandas > 0 ? round($totalIngresos / $totalComandas, 2) : 0;
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'fecha_inicio'     => $request->fecha_inicio,
+                'fecha_fin'        => $request->fecha_fin,
+                'total_ingresos'   => $totalIngresos,
+                'total_propinas'   => $totalPropinas,
+                'total_comandas'   => $totalComandas,
+                'promedio_comanda' => $promedioComanda,
             ]
+        ], 200);
+    }
+
+    /**
+     * GET /api/reportes/productos-populares
+     * Top 5 de platillos y combos más vendidos.
+     */
+    public function productosPopulares(): JsonResponse
+    {
+        $topProductos = DetallePedido::select(
+                'producto_id',
+                DB::raw('SUM(cantidad) as total_vendido'),
+                DB::raw('SUM(subtotal) as total_recaudado')
+            )
+            ->whereNotNull('producto_id')
+            ->whereHas('pedido', fn($q) => $q->where('estado', 'pagado'))
+            ->with('producto:id,nombre,precio')
+            ->groupBy('producto_id')
+            ->orderByDesc('total_vendido')
+            ->limit(5)
+            ->get();
+
+        $topCombos = DetallePedido::select(
+                'combo_id',
+                DB::raw('SUM(cantidad) as total_vendido'),
+                DB::raw('SUM(subtotal) as total_recaudado')
+            )
+            ->whereNotNull('combo_id')
+            ->whereHas('pedido', fn($q) => $q->where('estado', 'pagado'))
+            ->with('combo:id,nombre,precio')
+            ->groupBy('combo_id')
+            ->orderByDesc('total_vendido')
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'productos' => $topProductos,
+                'combos'    => $topCombos,
+            ]
+        ], 200);
+    }
+
+    /**
+     * GET /api/reportes/rendimiento-meseros
+     * Cantidad de comandas atendidas y total facturado por cada mesero.
+     */
+    public function rendimientoMeseros(): JsonResponse
+    {
+        $rendimiento = User::where('role', 'mesero')
+            ->withCount(['pedidos as comandas_atendidas' => function ($q) {
+                $q->where('estado', 'pagado');
+            }])
+            ->withSum(['pedidos as total_facturado' => function ($q) {
+                $q->where('estado', 'pagado');
+            }], 'total')
+            ->get()
+            ->map(function ($mesero) {
+                return [
+                    'mesero_id'          => $mesero->id,
+                    'nombre'             => $mesero->name,
+                    'comandas_atendidas' => $mesero->comandas_atendidas ?? 0,
+                    'total_facturado'    => (float) ($mesero->total_facturado ?? 0),
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $rendimiento
         ], 200);
     }
 }

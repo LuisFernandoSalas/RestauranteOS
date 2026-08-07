@@ -9,8 +9,10 @@ use App\Http\Controllers\Api\ProductoController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\ComboController;
 use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\V1\PagoController;  
+use App\Http\Controllers\Api\CajaController; 
 use App\Http\Controllers\Api\V1\CocinaController; 
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\FacturacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,8 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ==========================================
     // 🍽️ 2. COMBOS (Promociones y Paquetes)
-    //========================================
-    // Esto generará automáticamente las rutas GET, POST, PUT, DELETE para los combos
+    // ==========================================
     Route::apiResource('combos', ComboController::class);
 
     // ==========================================
@@ -52,42 +53,45 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pedidos', [PedidoController::class, 'store']); // Envío masivo Android
     Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
     Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
+    Route::get('/pedidos/mesa/{mesa_id}/activo', [PedidoController::class, 'porMesa']);
 
     // ==========================================
     // 🍳 4. MÓDULO DE COCINA (Kitchen Display System - KDS)
     // ==========================================
-    // Obtiene el feed horizontal de comandos activos
     Route::get('/cocina/pedidos', [CocinaController::class, 'index']);
-    // Avanza o cambia el estado por platillo individual (KDS interactivo)
     Route::patch('/cocina/detalles/{id}/estado', [CocinaController::class, 'updatePlatilloEstado']);
-    // Cancela una orden completa inyectando motivo (Auditoría/Mermas)
     Route::post('/cocina/pedidos/{id}/cancelar', [CocinaController::class, 'cancelarPedido']);
-    // Función 86: Desactiva un producto temporalmente del catálogo
     Route::post('/cocina/productos/{id}/pausar', [CocinaController::class, 'pausarProducto']);
 
     // ==========================================
-    // 💵 5. MÓDULO DE CAJA (Cierre de Cuentas y POS)
+    // 💰 5. MÓDULO DE CAJA (Cobro y Pagos)
     // ==========================================
-    Route::get('/pagos', [PagoController::class, 'index']);//Historial de caja
-    // Endpoint Unificado: Soporta Pago Simple, Mixto (Efectivo/Tarjeta) y Propinas Abiertas/Cerradas
-    Route::post('/pedidos/{id}/cobrar', [PagoController::class, 'cobrar']);
+    Route::get('/pagos', [CajaController::class, 'index']); // 👈 Historial de pagos y Cierre de caja
+    Route::get('/pedidos/{id}/detalle-cobro', [CajaController::class, 'obtenerDetalleCobro']);
+    Route::post('/pedidos/{id}/cobrar', [CajaController::class, 'cobrar']);
+    Route::post('/pedidos/{id}/dividir-partes', [CajaController::class, 'calcularDivisionPartes']);
 
     // ==========================================
     // 📈 6. CONTROL DE ADMINISTRACIÓN Y REPORTES
     // ==========================================
-    // Cambiado de delete absoluto a deshabilitación controlada o softdelete si aplica
     Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
     Route::get('/dashboard/reportes', [ReportController::class, 'getDashboardData']);
+    
+    // 📊 Nuevos Endpoints de Reportes Avanzados
+    Route::get('/reportes/ventas', [ReportController::class, 'ventas']);
+    Route::get('/reportes/productos-populares', [ReportController::class, 'productosPopulares']);
+    Route::get('/reportes/rendimiento-meseros', [ReportController::class, 'rendimientoMeseros']);
 
+    // ==========================================
+    // 🔔 7. RUTAS DE NOTIFICACIONES
+    // ==========================================
+    Route::get('/notificaciones', [NotificationController::class, 'index']);
+    Route::put('/notificaciones/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::put('/notificaciones/{id}/read', [NotificationController::class, 'markAsRead']);
 
-
-    Route::middleware('auth:sanctum')->group(function () {
-        // Tus rutas existentes...
-        
-        // Ruta para consultar el pedido activo de una mesa
-        Route::get('/pedidos/mesa/{mesa_id}/activo', [PedidoController::class, 'porMesa']);
-    });
-
-
-
-    });
+    // ==========================================
+    // 🧾 8. MÓDULO DE FACTURACIÓN ELECTRÓNICA
+    // ==========================================
+    Route::post('/facturacion/generar', [FacturacionController::class, 'generar']);
+    
+});

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Pedido;
 use App\Models\Mesa;
+use App\Models\Pedido;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -23,7 +23,7 @@ class SecurityApiTest extends TestCase
         Sanctum::actingAs($mesero, ['*']);
 
         // 2. Crear una mesa y un pedido de prueba
-        $mesa = Mesa::factory()->create(['estado' => 'ocupado']);
+        $mesa = Mesa::factory()->create(['numero' => 10, 'estado' => 'ocupada']);
         $pedido = Pedido::factory()->create(['mesa_id' => $mesa->id]);
 
         // 3. Intentar hacer la petición DELETE al endpoint protegido
@@ -42,17 +42,37 @@ class SecurityApiTest extends TestCase
     }
 
     /**
-     * Test: Un usuario invitado (sin token) no puede acceder a rutas protegidas.
+     * Test: Un usuario invitado (sin token) no puede acceder a rutas protegidas de pedidos.
      */
     public function test_usuario_no_autenticado_es_rechazado(): void
     {
-        $mesa = Mesa::factory()->create(['estado' => 'ocupado']);
+        $mesa = Mesa::factory()->create(['numero' => 10, 'estado' => 'ocupada']);
         $pedido = Pedido::factory()->create(['mesa_id' => $mesa->id]);
 
         // Intentar eliminar sin token Sanctum
         $response = $this->deleteJson("/api/pedidos/{$pedido->id}");
 
         // Laravel por defecto responde con 401 Unauthorized para rutas protegidas por auth:sanctum
+        $response->assertStatus(401);
+    }
+
+    /**
+     * Test: Un usuario no autenticado no puede consultar la lista de notificaciones.
+     */
+    public function test_usuario_no_autenticado_no_puede_ver_notificaciones(): void
+    {
+        $response = $this->getJson('/api/notificaciones');
+
+        $response->assertStatus(401);
+    }
+
+    /**
+     * Test: Un usuario no autenticado no puede marcar notificaciones como leídas.
+     */
+    public function test_usuario_no_autenticado_no_puede_marcar_notificaciones_como_leidas(): void
+    {
+        $response = $this->putJson('/api/notificaciones/read-all');
+
         $response->assertStatus(401);
     }
 }

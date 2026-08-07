@@ -90,4 +90,9 @@ class Pedido extends Model
     {
         return (float) $this->pagos()->sum('monto_recibido');
     }
+    //Para generar factura 
+        public function factura()
+    {
+        return $this->hasOne(Factura::class);
+    }
 }

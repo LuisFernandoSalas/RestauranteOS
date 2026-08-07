@@ -25,13 +25,14 @@ class PagoApiTest extends TestCase
         Sanctum::actingAs($user, ['*']);
 
         // 2. Armar el escenario previo
-        $mesa = Mesa::factory()->create(['estado' => 'ocupado']);
+        $mesa = Mesa::factory()->create(['estado' => 'ocupada']);
         $producto = Producto::factory()->create(['precio' => 200.00]);
         
         $pedido = Pedido::factory()->create([
             'mesa_id' => $mesa->id,
             'user_id' => $user->id,
-            'estado' => 'listo'
+            'estado' => 'listo',
+            'total' => 400.00
         ]);
 
         // Registrar el consumo
@@ -44,20 +45,16 @@ class PagoApiTest extends TestCase
             'estado' => 'listo'
         ]);
 
-        //  Forzar la carga de la relación para que el controlador la detecte
+        // Forzar la carga de la relación para que el controlador la detecte
         $pedido->load('mesa');
 
-        // 3. Payload adaptado con monto_recibido exacto
+        // 3. Payload con campos en la raíz (no anidados)
         $payload = [
             'client_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'metodo_pago' => 'efectivo',
+            'monto_recibido' => 440.00, // Total del pedido (400) + Propina (40)
             'propina' => 40.00,
             'requiere_factura' => false,
-            'pagos' => [
-                [
-                    'metodo_pago' => 'efectivo',
-                    'monto_recibido' => 440.00 // Total calculado del pedido (400) + Propina (40)
-                ]
-            ]
         ];
 
         // 4. Consumir el endpoint POST
@@ -77,10 +74,10 @@ class PagoApiTest extends TestCase
             'estado' => 'pagado'
         ]);
 
-        // Comprobamos directamente en la tabla que la mesa se liberó
+        // Comprobamos directamente en la tabla que la mesa se liberó a 'disponible'
         $this->assertDatabaseHas('mesas', [
             'id' => $mesa->id,
-            'estado' => 'libre'
+            'estado' => 'disponible'
         ]);
     }
 
