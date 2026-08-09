@@ -1,0 +1,907 @@
+package com.example.usuariococina;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import android.content.Intent;
+
+/**
+ * Actividad de inicio de sesión (Login) para el personal de cocina.
+ * Gestiona el acceso al sistema RestaurantOS y la recuperación de credenciales.
+ */
+public class MainActivity extends AppCompatActivity {
+
+    private EditText etUsername;
+    private EditText etPassword;
+    private Button btnIngresar;
+    private TextView tvForgotPass;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Habilitar diseño de pantalla completa (Edge-to-Edge)
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+        
+        // Ajustar el padding para evitar que la UI quede debajo de las barras del sistema (status bar/navigation bar)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        // Inicialización de componentes de la vista
+        etUsername = findViewById(R.id.etUsername);
+        etPassword = findViewById(R.id.etPassword);
+        btnIngresar = findViewById(R.id.btnIngresar);
+        tvForgotPass = findViewById(R.id.tvForgotPass);
+
+        // Listener para procesar el intento de acceso
+        btnIngresar.setOnClickListener(v -> {
+            String user = etUsername.getText().toString().trim();
+            String pass = etPassword.getText().toString().trim();
+            
+            performLogin(user, pass);
+        });
+
+        // Listener para abrir el flujo de recuperación de contraseña
+        tvForgotPass.setOnClickListener(v -> showForgotPasswordDialog());
+    }
+
+    /**
+     * Muestra la ventana emergente para recuperación de contraseña mediante código de verificación.
+     */
+    private void showForgotPasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_forgot_password, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+        
+        // Fondo transparente para permitir que el CardView del XML maneje las sombras y bordes
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        EditText etCode = dialogView.findViewById(R.id.etRecoveryCode);
+        Button btnVerify = dialogView.findViewById(R.id.btnVerify);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+
+        btnVerify.setOnClickListener(v -> {
+            String code = etCode.getText().toString().trim();
+            if (code.isEmpty()) {
+                Toast.makeText(this, "Ingrese el código", Toast.LENGTH_SHORT).show();
+            } else {
+                dialog.dismiss();
+                showSuccessDialog(); // Avanzar al diálogo de éxito
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+            dialog.show();
+    }
+
+    /**
+     * Muestra una confirmación visual de que la operación de recuperación fue exitosa.
+     */
+    private void showSuccessDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_success, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Estilo: Subrayado programático para el subtítulo de éxito
+        TextView tvSubtitle = dialogView.findViewById(R.id.tvSuccessSubtitle);
+        tvSubtitle.setPaintFlags(tvSubtitle.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+
+        Button btnContinue = dialogView.findViewById(R.id.btnContinue);
+        btnContinue.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    /**
+     * Ejecuta la lógica de autenticación. 
+     * Actualmente simula un acceso local y redirige al Tablero de Órdenes.
+     * @param username Nombre de usuario ingresado.
+     * @param password Contraseña ingresada.
+     */
+    private void performLogin(String username, String password) {
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Por favor ingrese todos los datos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // TODO: Integrar con servicio de autenticación (Firebase/API REST) en fases posteriores
+        Toast.makeText(this, "Sesión iniciada con éxito", Toast.LENGTH_SHORT).show();
+        
+        // Navegación hacia la actividad principal de la cocina
+        Intent intent = new Intent(this, OrdersActivity.class);
+        startActivity(intent);
+        finish(); // Finaliza la actividad de login para evitar volver atrás tras loguearse
+    }
+}
+
+package com.example.usuariococina;
+
+import java.util.List;
+
+/**
+ * Representa una comanda o pedido completo asignado a una mesa.
+ * Agrupa varios productos (OrderItem) y mantiene el estado general de la atención.
+ */
+public class Order {
+    // Número identificador de la mesa física
+    private int tableNumber;
+    
+    // Nombre del mesero encargado de la orden
+    private String waiterName;
+    
+    // Lista de platos y bebidas incluidos en este pedido
+    private List<OrderItem> items;
+    
+    // Estado actual de la orden (ej: "PENDIENTE", "EN PREPARACIÓN", "LISTO")
+    private String status;
+
+    public Order(int tableNumber, String waiterName, List<OrderItem> items, String status) {
+        this.tableNumber = tableNumber;
+        this.waiterName = waiterName;
+        this.items = items;
+        this.status = status;
+    }
+
+    // Getters para consulta de datos desde la UI y adaptadores
+    public int getTableNumber() { return tableNumber; }
+    public String getWaiterName() { return waiterName; }
+    public List<OrderItem> getItems() { return items; }
+    public String getStatus() { return status; }
+}
+
+package com.example.usuariococina;
+
+/**
+ * Modelo de datos que representa un producto individual dentro de una comanda.
+ * Contiene la información necesaria para que cocina sepa qué preparar y bajo qué condiciones.
+ */
+public class OrderItem {
+    // Nombre del plato o bebida (ej: "Pozole rojo")
+    private String name;
+    
+    // Cantidad solicitada por el cliente
+    private int quantity;
+    
+    // Instrucciones especiales (ej: "sin cebolla", "bien cocido")
+    private String note;
+
+    public OrderItem(String name, int quantity, String note) {
+        this.name = name;
+        this.quantity = quantity;
+        this.note = note;
+    }
+
+    // Getters estándar para acceder a la información desde los adaptadores o actividades
+    public String getName() { return name; }
+    public int getQuantity() { return quantity; }
+    public String getNote() { return note; }
+}
+
+package com.example.usuariococina;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Pantalla principal del KDS (Kitchen Display System).
+ * Muestra un tablero de todas las comandas activas en la cocina organizadas en un grid.
+ */
+public class OrdersActivity extends AppCompatActivity {
+
+    private RecyclerView rvOrders;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_orders);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_orders), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        rvOrders = findViewById(R.id.rvOrders);
+        
+        // Determinar el número de columnas basado en la orientación: 4 para Landscape, 2 para Portrait
+        int spanCount = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? 4 : 2;
+        rvOrders.setLayoutManager(new GridLayoutManager(this, spanCount));
+        
+        // Configurar botón de cerrar sesión (deshabilitado temporalmente por petición)
+        findViewById(R.id.btnLogout).setOnClickListener(v -> {
+            Toast.makeText(this, "Botón de salida presionado (acción deshabilitada)", Toast.LENGTH_SHORT).show();
+        });
+
+        // Carga inicial de datos ficticios para demostración del flujo
+        setupAdapter();
+    }
+
+    /**
+     * Muestra un diálogo de confirmación antes de cerrar la sesión.
+     */
+    private void showLogoutConfirmation() {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.logout_confirm_title)
+            .setMessage(R.string.logout_confirm_msg)
+            .setPositiveButton(R.string.logout_btn_confirm, (dialog, which) -> {
+                performLogout();
+            })
+            .setNegativeButton(R.string.button_cancel, null)
+            .show();
+    }
+
+    /**
+     * Ejecuta la lógica para salir del sistema y volver al login.
+     */
+    private void performLogout() {
+        Toast.makeText(this, "Sesión cerrada", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    /**
+     * Configura el adaptador con datos de ejemplo que simulan pedidos reales de distintas mesas.
+     */
+    private void setupAdapter() {
+        List<Order> dummyOrders = new ArrayList<>();
+
+        // Simulación: Pedido Mesa 2
+        List<OrderItem> itemsMesa2 = new ArrayList<>();
+        itemsMesa2.add(new OrderItem("Enchiladas verdes", 2, "sin picante"));
+        itemsMesa2.add(new OrderItem("Pozole rojo", 1, null));
+        itemsMesa2.add(new OrderItem("Agua Jamaica", 2, "sin azúcar"));
+        
+        dummyOrders.add(new Order(2, "Ana M.", itemsMesa2, "PENDIENTE"));
+
+        // Simulación: Pedido Mesa 5
+        List<OrderItem> itemsMesa5 = new ArrayList<>();
+        itemsMesa5.add(new OrderItem("Carne asada", 1, null));
+        itemsMesa5.add(new OrderItem("Arroz blanco", 1, null));
+        itemsMesa5.add(new OrderItem("Agua Horchata", 2, null));
+        
+        dummyOrders.add(new Order(5, "Luis G.", itemsMesa5, "EN PREPARACIÓN"));
+
+        // Simulación: Pedido extenso para validar el scroll vertical dentro de la tarjeta
+        List<OrderItem> itemsLargo = new ArrayList<>();
+        itemsLargo.add(new OrderItem("Tacos al pastor", 5, "Con mucha piña"));
+        itemsLargo.add(new OrderItem("Gringas", 2, null));
+        itemsLargo.add(new OrderItem("Consomé", 1, null));
+        itemsLargo.add(new OrderItem("Refresco", 4, "Fríos"));
+        itemsLargo.add(new OrderItem("Flan napolitano", 2, null));
+        itemsLargo.add(new OrderItem("Café americano", 1, "Sin azúcar"));
+        itemsLargo.add(new OrderItem("Guacamole extra", 1, null));
+        
+        dummyOrders.add(new Order(8, "Carlos P.", itemsLargo, "PENDIENTE"));
+
+        // Inicialización del adaptador con un listener para capturar clics en las tarjetas
+        OrdersAdapter adapter = new OrdersAdapter(this, dummyOrders, order -> {
+            showOrderDetailDialog(order);
+        });
+        rvOrders.setAdapter(adapter);
+    }
+
+    /**
+     * Muestra un panel lateral (Dialog) con los detalles específicos de la comanda seleccionada.
+     * @param order El objeto de la orden que se desea inspeccionar.
+     */
+    public void showOrderDetailDialog(Order order) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_order_details, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        // Vinculación de elementos del encabezado del diálogo
+        TextView tvTitle = dialogView.findViewById(R.id.tvDetailTitle);
+        TextView tvWaiter = dialogView.findViewById(R.id.tvDetailWaiter);
+        Button btnStatus = dialogView.findViewById(R.id.btnDetailTotalStatus);
+        LinearLayout container = dialogView.findViewById(R.id.containerDetailItems);
+
+        if (tvTitle != null) tvTitle.setText(getString(R.string.order_detail_title, order.getTableNumber()));
+        if (tvWaiter != null) tvWaiter.setText(getString(R.string.waiter_label, order.getWaiterName()));
+        if (btnStatus != null) btnStatus.setText(order.getStatus());
+
+        // Inserción dinámica de los productos de la orden en el contenedor del diálogo
+        if (container != null) {
+            container.removeAllViews();
+            for (OrderItem item : order.getItems()) {
+                View itemView = inflater.inflate(R.layout.item_detail_product, container, false);
+                ((TextView) itemView.findViewById(R.id.tvDetailProductQty)).setText(String.valueOf(item.getQuantity()));
+                ((TextView) itemView.findViewById(R.id.tvDetailProductName)).setText(item.getName());
+                ((Button) itemView.findViewById(R.id.btnDetailProductStatus)).setText(order.getStatus());
+                
+                TextView tvNote = itemView.findViewById(R.id.tvDetailProductNote);
+                if (item.getNote() != null && !item.getNote().isEmpty()) {
+                    tvNote.setText(item.getNote());
+                } else {
+                    // Si no existen notas especiales, se oculta el área de texto para optimizar espacio
+                    View noteContainer = (View) tvNote.getParent();
+                    if (noteContainer != null) noteContainer.setVisibility(View.GONE);
+                }
+                container.addView(itemView);
+            }
+        }
+
+        // Configuración del botón de cierre
+        if (dialogView.findViewById(R.id.btnCloseDetail) != null) {
+            dialogView.findViewById(R.id.btnCloseDetail).setOnClickListener(v -> dialog.dismiss());
+        }
+
+        // Personalización del estilo del diálogo: Fondo transparente y anclado al lado derecho (estilo Sidebar)
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setGravity(android.view.Gravity.END);
+        }
+
+        dialog.show();
+    }
+
+    /**
+     * Lanza una notificación visual de tipo Pop-up para alertar a cocina sobre la entrada de un nuevo pedido.
+     */
+    public void showNewOrderDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_new_order, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        View btnAccept = dialogView.findViewById(R.id.btnAcceptOrder);
+        View btnLater = dialogView.findViewById(R.id.btnLaterOrder);
+
+        if (btnAccept != null) btnAccept.setOnClickListener(v -> dialog.dismiss());
+        if (btnLater != null) btnLater.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+}
+
+package com.example.usuariococina;
+
+import android.content.Context;
+import android.content.Intent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.List;
+
+/**
+ * Adaptador que gestiona la visualización de las tarjetas de pedidos en el tablero principal (Grid).
+ * Cada tarjeta muestra un resumen rápido de los productos de una mesa.
+ */
+public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.OrderViewHolder> {
+
+    private List<Order> orders;
+    private OnOrderClickListener listener;
+    private Context context;
+
+    /**
+     * Interfaz para gestionar eventos de interacción, como ver más detalles.
+     */
+    public interface OnOrderClickListener {
+        void onMoreClick(Order order);
+    }
+
+    public OrdersAdapter(Context context, List<Order> orders, OnOrderClickListener listener) {
+        this.context = context;
+        this.orders = orders;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public OrderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Infla el diseño de la tarjeta de pedido (CardView)
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_order_card, parent, false);
+        return new OrderViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
+        Order order = orders.get(position);
+        
+        // Configura la cabecera de la tarjeta
+        holder.tvTableName.setText("Mesa " + order.getTableNumber());
+        holder.tvWaiterName.setText(order.getWaiterName());
+        holder.btnStatus.setText(order.getStatus());
+        
+        // Limpia los productos previos para evitar duplicados al reciclar la vista
+        holder.containerItems.removeAllViews();
+        
+        // Renderiza cada producto de la orden dentro de la tarjeta
+        for (OrderItem item : order.getItems()) {
+            View itemView = LayoutInflater.from(holder.itemView.getContext()).inflate(R.layout.item_order_row, holder.containerItems, false);
+            TextView tvQty = itemView.findViewById(R.id.tvItemQty);
+            TextView tvName = itemView.findViewById(R.id.tvItemName);
+            TextView tvNote = itemView.findViewById(R.id.tvItemNote);
+
+            tvQty.setText(String.valueOf(item.getQuantity()));
+            tvName.setText(item.getName());
+            
+            // Muestra notas de cocina solo si existen
+            if (item.getNote() != null && !item.getNote().isEmpty()) {
+                tvNote.setVisibility(View.VISIBLE);
+                tvNote.setText(item.getNote());
+            } else {
+                tvNote.setVisibility(View.GONE);
+            }
+            
+            holder.containerItems.addView(itemView);
+        }
+
+        // Listener para el icono de "Más opciones" (Abre el diálogo de detalles)
+        holder.btnMore.setOnClickListener(v -> {
+            if (listener != null) listener.onMoreClick(order);
+        });
+
+        // Al hacer clic en el botón de estado (ej: "PENDIENTE"), se navega a la pantalla de preparación detallada
+        holder.btnStatus.setOnClickListener(v -> {
+            Intent intent = new Intent(context, PreparationDetailActivity.class);
+            context.startActivity(intent);
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return orders.size();
+    }
+
+    /**
+     * ViewHolder que mantiene las referencias a los componentes de la tarjeta.
+     */
+    static class OrderViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTableName, tvWaiterName;
+        LinearLayout containerItems;
+        Button btnStatus;
+        ImageView btnMore;
+
+        public OrderViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvTableName = itemView.findViewById(R.id.tvTableName);
+            tvWaiterName = itemView.findViewById(R.id.tvWaiterName);
+            containerItems = itemView.findViewById(R.id.containerItems);
+            btnStatus = itemView.findViewById(R.id.btnStatus);
+            btnMore = itemView.findViewById(R.id.btnMore);
+        }
+    }
+}
+
+package com.example.usuariococina;
+
+import android.os.Bundle;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Activity que gestiona el detalle de preparación de una orden específica.
+ * Permite a cocina marcar platos como listos, cancelar órdenes o pausar productos del menú.
+ */
+public class PreparationDetailActivity extends AppCompatActivity {
+
+    private RecyclerView rvPrepItems;
+    private TextView tvPrepTitle;
+    private TextView tvPrepMesaWaiter;
+    
+    // Almacenan la referencia al botón seleccionado en los diálogos para gestionar su estilo visual
+    private com.google.android.material.button.MaterialButton selectedReasonBtn = null;
+    private com.google.android.material.button.MaterialButton selectedDurationBtn = null;
+    
+    // Lista local de los productos que componen la orden actual
+    private List<OrderItem> currentOrderItems = new ArrayList<>();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_preparation_detail);
+
+        // Inicialización de componentes de la UI
+        rvPrepItems = findViewById(R.id.rvPrepItems);
+        tvPrepTitle = findViewById(R.id.tvPrepTitle);
+        tvPrepMesaWaiter = findViewById(R.id.tvPrepMesaWaiter);
+
+        // Configuración de listeners para los botones de acción
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        findViewById(R.id.btnCompleteOrder).setOnClickListener(v -> showOrderCompletedDialog());
+        findViewById(R.id.btnCancelOrder).setOnClickListener(v -> showCancelOrderDialog());
+        findViewById(R.id.btnPauseOrder).setOnClickListener(v -> showPauseProductDialog());
+
+        // Carga de datos iniciales (Simulado)
+        setupDummyData();
+    }
+
+    /**
+     * Muestra el diálogo de éxito cuando se completa una comanda.
+     */
+    private void showOrderCompletedDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_order_completed, null);
+        builder.setView(dialogView);
+
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        
+        // Hacer el fondo transparente para respetar los bordes redondeados del layout XML
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        dialogView.findViewById(R.id.btnReturnToPanel).setOnClickListener(v -> {
+            dialog.dismiss();
+            finish(); // Finaliza la actividad y regresa al panel principal de cocina
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Gestiona el diálogo de cancelación de orden, permitiendo seleccionar motivos predefinidos.
+     */
+    private void showCancelOrderDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_cancel_order, null);
+        builder.setView(dialogView);
+
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        // Obtener referencias de botones de motivos
+        com.google.android.material.button.MaterialButton btnOut = dialogView.findViewById(R.id.btnReasonOut);
+        com.google.android.material.button.MaterialButton btnWaiter = dialogView.findViewById(R.id.btnReasonWaiter);
+        com.google.android.material.button.MaterialButton btnCustomer = dialogView.findViewById(R.id.btnReasonCustomer);
+        com.google.android.material.button.MaterialButton btnOther = dialogView.findViewById(R.id.btnReasonOther);
+        android.widget.EditText etReason = dialogView.findViewById(R.id.etCancelReason);
+
+        // Listener compartido para gestionar la selección visual exclusiva de motivos
+        android.view.View.OnClickListener reasonClickListener = v -> {
+            com.google.android.material.button.MaterialButton clickedBtn = (com.google.android.material.button.MaterialButton) v;
+            
+            // Desmarcar el botón previamente seleccionado
+            if (selectedReasonBtn != null) {
+                selectedReasonBtn.setStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D3D3D3")));
+                selectedReasonBtn.setTextColor(android.graphics.Color.parseColor("#5D4037"));
+            }
+
+            // Marcar el nuevo botón con el color corporativo Terracota
+            clickedBtn.setStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#C1440E")));
+            clickedBtn.setTextColor(android.graphics.Color.parseColor("#C1440E"));
+            selectedReasonBtn = clickedBtn;
+
+            // Sincronizar el texto del botón con el campo de texto editable
+            etReason.setText(clickedBtn.getText());
+        };
+
+        btnOut.setOnClickListener(reasonClickListener);
+        btnWaiter.setOnClickListener(reasonClickListener);
+        btnCustomer.setOnClickListener(reasonClickListener);
+        btnOther.setOnClickListener(reasonClickListener);
+
+        dialogView.findViewById(R.id.btnDismissCancel).setOnClickListener(v -> {
+            selectedReasonBtn = null;
+            dialog.dismiss();
+        });
+        
+        dialogView.findViewById(R.id.btnConfirmCancel).setOnClickListener(v -> {
+            selectedReasonBtn = null;
+            dialog.dismiss();
+            finish();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Muestra el diálogo dinámico para pausar productos.
+     * Genera chips de forma dinámica basados en la orden actual y valida selecciones obligatorias.
+     */
+    private void showPauseProductDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_pause_product, null);
+        builder.setView(dialogView);
+
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        com.google.android.material.chip.ChipGroup cgProducts = dialogView.findViewById(R.id.cgProductsToPause);
+        com.google.android.material.button.MaterialButton btnConfirm = dialogView.findViewById(R.id.btnConfirmPause);
+        android.widget.TextView tvSummary = dialogView.findViewById(R.id.tvPauseSummary);
+        
+        // Estado inicial del diálogo: Botón deshabilitado hasta que se complete la selección
+        btnConfirm.setEnabled(false);
+        btnConfirm.setAlpha(0.5f);
+        selectedDurationBtn = null;
+
+        // Lógica de validación dinámica (Feedback visual)
+        Runnable checkValidation = () -> {
+            int checkedId = cgProducts.getCheckedChipId();
+            if (checkedId != -1 && selectedDurationBtn != null) {
+                // Selección completa: Habilitar acción
+                btnConfirm.setEnabled(true);
+                btnConfirm.setAlpha(1.0f);
+                com.google.android.material.chip.Chip selectedChip = dialogView.findViewById(checkedId);
+                tvSummary.setText("Listo para pausar: " + selectedChip.getText() + " (" + selectedDurationBtn.getText() + ")");
+                tvSummary.setBackgroundColor(android.graphics.Color.parseColor("#E8F5E9")); // Feedback Verde
+                tvSummary.setTextColor(android.graphics.Color.parseColor("#2E7D32"));
+            } else {
+                // Selección incompleta: Bloquear acción
+                btnConfirm.setEnabled(false);
+                btnConfirm.setAlpha(0.5f);
+                tvSummary.setText("⚠️ Selecciona producto y duración para continuar");
+                tvSummary.setBackgroundColor(android.graphics.Color.parseColor("#FFF8E1")); // Feedback Alerta
+                tvSummary.setTextColor(android.graphics.Color.parseColor("#C1440E"));
+            }
+        };
+
+        // Generación dinámica de Chips para cada producto de la orden
+        for (OrderItem item : currentOrderItems) {
+            com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(this);
+            chip.setText(item.getName());
+            chip.setCheckable(true);
+            chip.setClickable(true);
+            chip.setChipBackgroundColorResource(android.R.color.transparent);
+            chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D3D3D3")));
+            chip.setChipStrokeWidth(2f);
+            chip.setTextColor(android.graphics.Color.parseColor("#5D4037"));
+            
+            // Listener para cambios de estado en el Chip
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E08A2B"))); // Ocre
+                    chip.setTextColor(android.graphics.Color.parseColor("#E08A2B"));
+                } else {
+                    chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D3D3D3")));
+                    chip.setTextColor(android.graphics.Color.parseColor("#5D4037"));
+                }
+                checkValidation.run();
+            });
+            
+            cgProducts.addView(chip);
+        }
+
+        // Gestión de botones de duración (30 min, 1h, Reactivar)
+        int[] durationIds = {R.id.btnTime30, R.id.btnTime1h, R.id.btnTimeReact};
+        for (int id : durationIds) {
+            com.google.android.material.button.MaterialButton btn = dialogView.findViewById(id);
+            btn.setOnClickListener(v -> {
+                if (selectedDurationBtn != null) {
+                    selectedDurationBtn.setStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D3D3D3")));
+                    selectedDurationBtn.setTextColor(android.graphics.Color.parseColor("#5D4037"));
+                }
+                btn.setStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E08A2B"))); 
+                btn.setTextColor(android.graphics.Color.parseColor("#E08A2B"));
+                selectedDurationBtn = btn;
+                checkValidation.run();
+            });
+        }
+
+        dialogView.findViewById(R.id.btnCancelPause).setOnClickListener(v -> dialog.dismiss());
+
+        // Acción final con Doble Confirmación para operaciones críticas
+        btnConfirm.setOnClickListener(v -> {
+            int checkedChipId = cgProducts.getCheckedChipId();
+            com.google.android.material.chip.Chip selectedChip = dialogView.findViewById(checkedChipId);
+            String productName = selectedChip.getText().toString();
+            String duration = selectedDurationBtn.getText().toString();
+
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("⚠️ Confirmar Pausa Crítica")
+                .setMessage("¿Estás seguro de pausar '" + productName + "'?\n\nEsta acción eliminará el producto del menú digital inmediatamente por " + duration + ".")
+                .setPositiveButton("Confirmar Pausa", (d, which) -> {
+                    android.widget.Toast.makeText(this, "Producto pausado: " + productName, android.widget.Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Regresar", null)
+                .show();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Inicializa datos de prueba para la visualización del KDS.
+     */
+    private void setupDummyData() {
+        tvPrepTitle.setText("Detalle — Mesa 4");
+        tvPrepMesaWaiter.setText("Mesa 4 — Mesero: Ana M.");
+
+        currentOrderItems.clear();
+        currentOrderItems.add(new OrderItem("Pozole rojo", 3, null));
+        currentOrderItems.add(new OrderItem("Tostadas", 2, "bien tostadas"));
+        currentOrderItems.add(new OrderItem("Agua Jamaica", 1, "sin azúcar"));
+
+        // Configuración del RecyclerView con el adaptador personalizado
+        PrepItemsAdapter adapter = new PrepItemsAdapter(currentOrderItems);
+        rvPrepItems.setLayoutManager(new LinearLayoutManager(this));
+        rvPrepItems.setAdapter(adapter);
+    }
+}
+
+
+
+package com.example.usuariococina;
+
+import android.graphics.Color;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.List;
+
+/**
+ * Adaptador para el RecyclerView que muestra la lista de platos en preparación dentro de una orden.
+ * Gestiona el estado visual de cada producto (En preparación vs Listo).
+ */
+public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.ViewHolder> {
+
+    private List<OrderItem> items;
+
+    public PrepItemsAdapter(List<OrderItem> items) {
+        this.items = items;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Infla el diseño de la fila individual para cada producto
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_prep_detail_row, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        OrderItem item = items.get(position);
+        
+        // Asignación de datos básicos del producto
+        holder.tvName.setText(item.getName());
+        holder.tvQuantity.setText(String.valueOf(item.getQuantity()));
+        
+        // Manejo de la visibilidad de las notas: solo se muestran si el producto tiene instrucciones especiales
+        if (item.getNote() != null && !item.getNote().isEmpty()) {
+            holder.tvNote.setText(item.getNote());
+            holder.llNotes.setVisibility(View.VISIBLE);
+        } else {
+            holder.llNotes.setVisibility(View.GONE);
+        }
+
+        // Configuración de listeners para los estados de preparación
+        holder.btnReady.setOnClickListener(v -> {
+            markAsReady(holder); // Cambia el plato a estado completado
+        });
+
+        holder.btnPrep.setOnClickListener(v -> {
+            markAsInPrep(holder); // Regresa el plato a estado en preparación
+        });
+        
+        // Estado inicial por defecto para nuevos items cargados
+        markAsInPrep(holder);
+    }
+
+    /**
+     * Aplica cambios visuales para indicar que un plato está terminado.
+     * Reduce la opacidad y cambia colores para dar feedback de tarea completada.
+     */
+    private void markAsReady(ViewHolder holder) {
+        holder.btnReady.setText("✓ LISTO");
+        holder.btnReady.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7A3520"))); // Terracota oscuro
+        holder.btnPrep.setVisibility(View.GONE); // Oculta el botón de "En prep"
+        holder.cardContainer.setCardBackgroundColor(Color.parseColor("#FFF5F2")); // Fondo tenue
+        holder.tvName.setAlpha(0.5f); // Atenuación del texto
+        holder.tvQuantity.setAlpha(0.5f);
+    }
+
+    /**
+     * Restablece el aspecto visual del item al estado activo (En cocina).
+     */
+    private void markAsInPrep(ViewHolder holder) {
+        holder.btnReady.setText("✓ Listo");
+        holder.btnReady.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7A3520")));
+        holder.btnPrep.setVisibility(View.VISIBLE);
+        holder.btnPrep.setText("En prep.");
+        holder.btnPrep.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#C1440E"))); // Terracota principal
+        holder.cardContainer.setCardBackgroundColor(Color.WHITE);
+        holder.tvName.setAlpha(1.0f);
+        holder.tvQuantity.setAlpha(1.0f);
+    }
+
+    @Override
+    public int getItemCount() {
+        return items.size();
+    }
+
+    /**
+     * Contenedor de vistas para optimizar el rendimiento del RecyclerView.
+     */
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvQuantity, tvNote;
+        View llNotes;
+        Button btnPrep, btnReady;
+        CardView cardContainer;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvPrepProductName);
+            tvQuantity = itemView.findViewById(R.id.tvPrepQuantity);
+            tvNote = itemView.findViewById(R.id.tvPrepNotes);
+            llNotes = itemView.findViewById(R.id.llPrepNotes);
+            btnPrep = itemView.findViewById(R.id.btnItemPrep);
+            btnReady = itemView.findViewById(R.id.btnItemReady);
+            cardContainer = itemView.findViewById(R.id.cardItemContainer);
+        }
+    }
+}
+
