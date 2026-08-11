@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Pago;
 use App\Models\Pedido;
+use App\Models\TurnoCaja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class CajaController extends Controller
 {
-        /**
+    /**
      * Listar historial de pagos (para Cierre de Caja y Consultas)
      */
     public function index(Request $request)
@@ -24,12 +26,12 @@ class CajaController extends Controller
             'data'   => $pagos
         ], 200);
     }
-        /**
+
+    /**
      * Obtener el detalle completo del pedido para el módulo de cobro
      */
     public function obtenerDetalleCobro($id)
     {
-       
         $pedido = Pedido::with(['detalles.producto', 'pagos', 'mesa'])->findOrFail($id);
         
         $totalPagado = (float) $pedido->pagos->sum('monto_recibido');
@@ -49,6 +51,15 @@ class CajaController extends Controller
      */
     public function cobrar(Request $request, $id)
     {
+        // Opcional: Validar que exista un turno de caja abierto antes de cobrar
+        $turnoActivo = TurnoCaja::where('estado', 'ABIERTO')->first();
+        if (!$turnoActivo) {
+            return response()->json([
+                'status' => 'error',
+                'error'  => 'No se puede procesar el cobro porque no hay un turno de caja abierto.'
+            ], 422);
+        }
+
         // 1. Validar la petición
         $request->validate([
             'metodo_pago'      => 'required|in:efectivo,tarjeta,transferencia,mixto',
@@ -82,7 +93,7 @@ class CajaController extends Controller
             ], 422);
         }
 
-        // Obtener de forma segura el ID del usuario autenticado (compatible con Sanctum / Tests)
+        // Obtener de forma segura el ID del usuario autenticado
         $usuarioCobradorId = $request->user()?->id 
                           ?? auth('sanctum')->id() 
                           ?? $pedido->user_id;
@@ -128,7 +139,7 @@ class CajaController extends Controller
             DB::commit();
 
             return response()->json([
-                'status'          => 'success', // 💡 Agregamos status success para compatibilidad con PagoApiTest
+                'status'          => 'success',
                 'message'         => $saldoPendiente <= 0 ? 'Pedido cobrado con éxito.' : 'Pago parcial registrado',
                 'mensaje'         => $saldoPendiente <= 0 ? 'Pedido cobrado con éxito.' : 'Pago parcial registrado',
                 'pago'            => $pago,
@@ -176,5 +187,160 @@ class CajaController extends Controller
                 'total_por_persona' => $totalPorPersona,
             ]
         ]);
+    }
+
+    // ==========================================
+    // 🚀 NUEVOS MÉTODOS DE CONTROL DE TURNO Y ARQUEO
+    // ==========================================
+
+    /**
+     * Obtener el estado del turno actual y ventas acumuladas en tiempo real
+     */
+    public function obtenerTurnoActual()
+    {
+        $turno = TurnoCaja::with('user:id,name,email')
+            ->where('estado', 'ABIERTO')
+            ->latest('opened_at')
+            ->first();
+
+        if (!$turno) {
+            return response()->json([
+                'status'  => 'success',
+                'activo'  => false,
+                'message' => 'No hay ningún turno de caja abierto actualmente.'
+            ], 200);
+        }
+
+        // Consultar ventas reales directamente desde la tabla 'pagos' desde que se abrió el turno
+        $ventasEfectivo = Pago::where('created_at', '>=', $turno->opened_at)
+            ->whereIn('metodo_pago', ['efectivo', 'mixto'])
+            ->sum('monto_recibido');
+
+        $ventasTarjeta = Pago::where('created_at', '>=', $turno->opened_at)
+            ->whereIn('metodo_pago', ['tarjeta', 'transferencia'])
+            ->sum('monto_recibido');
+
+        $propinasAcumuladas = Pago::where('created_at', '>=', $turno->opened_at)
+            ->sum('propina');
+
+        $efectivoEsperado = $turno->monto_apertura + $ventasEfectivo;
+
+        return response()->json([
+            'status' => 'success',
+            'activo' => true,
+            'turno'  => $turno,
+            'resumen_tiempo_real' => [
+                'monto_apertura'            => (float) $turno->monto_apertura,
+                'ventas_efectivo'           => (float) $ventasEfectivo,
+                'ventas_tarjeta'            => (float) $ventasTarjeta,
+                'propinas_totales'          => (float) $propinasAcumuladas,
+                'total_ventas_turno'        => (float) ($ventasEfectivo + $ventasTarjeta),
+                'efectivo_esperado_en_caja' => (float) $efectivoEsperado,
+            ]
+        ], 200);
+    }
+
+    /**
+     * Abrir turno de caja
+     */
+    public function abrirTurno(Request $request)
+    {
+        $request->validate([
+            'monto_apertura' => 'required|numeric|min:0',
+        ]);
+
+        $turnoActivo = TurnoCaja::where('estado', 'ABIERTO')->first();
+        if ($turnoActivo) {
+            return response()->json([
+                'status' => 'error',
+                'error'  => 'Ya existe un turno abierto en caja.'
+            ], 422);
+        }
+
+        $usuarioId = $request->user()?->id ?? auth('sanctum')->id();
+
+        $turno = TurnoCaja::create([
+            'user_id'        => $usuarioId,
+            'monto_apertura' => $request->monto_apertura,
+            'estado'         => 'ABIERTO',
+            'opened_at'      => Carbon::now(),
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Turno de caja abierto correctamente.',
+            'turno'   => $turno
+        ], 201);
+    }
+
+    /**
+     * Arqueo y cierre de turno de caja
+     */
+    public function cerrarTurno(Request $request)
+    {
+        $request->validate([
+            'turno_id'              => 'required|exists:turnos_caja,id',
+            'monto_cierre_efectivo' => 'required|numeric|min:0',
+            'monto_cierre_tarjeta'  => 'required|numeric|min:0',
+            'monto_siguiente_turno' => 'nullable|numeric|min:0',
+            'notas'                 => 'nullable|string|max:500',
+        ]);
+
+        $turno = TurnoCaja::findOrFail($request->turno_id);
+
+        if ($turno->estado === 'CERRADO') {
+            return response()->json([
+                'status' => 'error',
+                'error'  => 'Este turno ya ha sido cerrado previamente.'
+            ], 422);
+        }
+
+        // Calcular efectivo esperado en base a la tabla 'pagos'
+        $ventasEfectivo = Pago::where('created_at', '>=', $turno->opened_at)
+            ->whereIn('metodo_pago', ['efectivo', 'mixto'])
+            ->sum('monto_recibido');
+
+        $efectivoEsperado = $turno->monto_apertura + $ventasEfectivo;
+        $diferencia = $request->monto_cierre_efectivo - $efectivoEsperado;
+
+        $turno->update([
+            'monto_cierre_efectivo'   => $request->monto_cierre_efectivo,
+            'monto_cierre_tarjeta'    => $request->monto_cierre_tarjeta,
+            'monto_esperado_efectivo' => $efectivoEsperado,
+            'diferencia'              => $diferencia,
+            'monto_siguiente_turno'   => $request->monto_siguiente_turno ?? 0.00,
+            'estado'                  => 'CERRADO',
+            'notas'                   => $request->notas,
+            'closed_at'               => Carbon::now(),
+        ]);
+
+        return response()->json([
+            'status'         => 'success',
+            'message'        => 'Cierre de turno realizado con éxito.',
+            'resumen_cierre' => [
+                'turno_id'              => $turno->id,
+                'fondo_inicial'         => (float) $turno->monto_apertura,
+                'efectivo_esperado'     => (float) $efectivoEsperado,
+                'efectivo_contado'      => (float) $turno->monto_cierre_efectivo,
+                'diferencia'            => (float) $diferencia, // $0.00 es perfecto
+                'monto_siguiente_turno' => (float) $turno->monto_siguiente_turno,
+                'closed_at'             => $turno->closed_at->toDateTimeString()
+            ]
+        ], 200);
+    }
+
+    /**
+     * Historial de turnos de caja (Para reportes/administración)
+     */
+    public function historialTurnos()
+    {
+        $turnos = TurnoCaja::with('user:id,name,email')
+            ->orderBy('opened_at', 'desc')
+            ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $turnos
+        ], 200);
     }
 }

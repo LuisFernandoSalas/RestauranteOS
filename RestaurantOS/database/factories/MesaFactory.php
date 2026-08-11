@@ -16,4 +16,5 @@ class MesaFactory extends Factory
             'estado' => 'libre',
         ];
     }
+    
 }

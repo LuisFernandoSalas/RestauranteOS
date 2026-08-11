@@ -8,12 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
-   
+    
     protected $table = 'users';
+    
     protected $fillable = [
         'name',
         'username',
@@ -26,8 +26,9 @@ class User extends Authenticatable
         'remember_token',
     ];  
 
+    // Si usas Hash::make() en el controlador, deja $casts vacío o sin el cast 'hashed'
     protected $casts = [
-        'password' => 'hashed',
+        'email_verified_at' => 'datetime',
     ];
 
     public function pedidos(): HasMany
@@ -54,7 +55,4 @@ class User extends Authenticatable
     {
         return $this->role === 'cajero';
     }
-
 }
-   
-

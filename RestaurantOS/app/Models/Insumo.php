@@ -13,6 +13,7 @@ class Insumo extends Model
 
     protected $fillable = [
         'nombre',
+        'categoría',
         'stock_actual',
         'stock_minimo',
         'unidad_medida', // kg, gr, pzas, lt

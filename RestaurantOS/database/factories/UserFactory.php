@@ -16,7 +16,9 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'username' => $this->faker->unique()->userName(),
             'password' => Hash::make('password123'), // Contraseña por defecto para pruebas
-            'role' => $this->faker->randomElement(['mesero', 'cocina', 'cajero', 'admin']),
+            'role' => $this->faker->randomElement(['mesero', 'cocinero', 'cajero', 'admin']),
         ];
     }
+
+    
 }

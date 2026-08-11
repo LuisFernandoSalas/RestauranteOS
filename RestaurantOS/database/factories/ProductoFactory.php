@@ -13,10 +13,11 @@ class ProductoFactory extends Factory
     public function definition(): array
     {
         return [
-            'categoria_id' => Categoria::factory(),
-            'nombre' => $this->faker->word(),
-            'descripcion' => $this->faker->sentence(),
-            'precio' => $this->faker->randomFloat(2, 50, 500),
+            'categoria_id'  => Categoria::factory(),
+            'nombre'        => $this->faker->word(),
+            'descripcion'   => $this->faker->sentence(),
+            'precio'        => $this->faker->randomFloat(2, 50, 500),
+            'estado'        => 'activo',
             'pausado_hasta' => null,
         ];
     }

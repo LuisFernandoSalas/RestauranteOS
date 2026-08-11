@@ -9,6 +9,7 @@ use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -21,11 +22,13 @@ class ReportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Carbon::setTestNow('2026-08-10 12:00:00');
+        
         $this->admin = User::factory()->create(['role' => 'admin']);
-        Sanctum::actingAs($this->admin);
+        Sanctum::actingAs($this->admin, ['*']);
     }
 
-    public function test_puede_obtener_datos_del_dashboard()
+    public function test_puede_obtener_datos_del_dashboard(): void
     {
         $response = $this->getJson('/api/dashboard/reportes');
 
@@ -37,21 +40,21 @@ class ReportTest extends TestCase
                      'metodos_pago',
                      'top_productos',
                      'inventario_critico',
-                     'auditoria'
+                     'auditoria',
                  ]);
     }
 
-    public function test_puede_obtener_reporte_de_ventas_por_periodo()
+    public function test_puede_obtener_reporte_de_ventas_por_periodo(): void
     {
-        $fechaHoy = now()->toDateString();
-
+        $fechaHoy = Carbon::now()->toDateString();
         $mesa = Mesa::factory()->create();
 
         $pedido = Pedido::factory()->create([
-            'mesa_id' => $mesa->id,
-            'user_id' => $this->admin->id,
-            'estado'  => 'pagado',
-            'total'   => 100.00,
+            'mesa_id'    => $mesa->id,
+            'user_id'    => $this->admin->id,
+            'estado'     => 'pagado',
+            'total'      => 100.00,
+            'created_at' => Carbon::now(),
         ]);
 
         Pago::create([
@@ -61,7 +64,7 @@ class ReportTest extends TestCase
             'propina'          => 10.00,
             'metodo_pago'      => 'efectivo',
             'requiere_factura' => false,
-            'cobrado_por'      => $this->admin->id, // <- Agregado aquí
+            'cobrado_por'      => $this->admin->id,
         ]);
 
         $response = $this->getJson("/api/reportes/ventas?fecha_inicio={$fechaHoy}&fecha_fin={$fechaHoy}");
@@ -73,11 +76,28 @@ class ReportTest extends TestCase
                          'total_ingresos' => 100.00,
                          'total_propinas' => 10.00,
                          'total_comandas' => 1,
-                     ]
+                     ],
                  ]);
     }
 
-    public function test_puede_obtener_top_productos_populares()
+    public function test_retorna_totales_en_cero_si_no_hay_ventas_en_el_periodo(): void
+    {
+        $fechaAyer = Carbon::yesterday()->toDateString();
+
+        $response = $this->getJson("/api/reportes/ventas?fecha_inicio={$fechaAyer}&fecha_fin={$fechaAyer}");
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status' => 'success',
+                     'data'   => [
+                         'total_ingresos' => 0.00,
+                         'total_propinas' => 0.00,
+                         'total_comandas' => 0,
+                     ],
+                 ]);
+    }
+
+    public function test_puede_obtener_top_productos_populares(): void
     {
         $mesa = Mesa::factory()->create();
         $producto = Producto::factory()->create(['nombre' => 'Tacos al Pastor', 'precio' => 25.00]);
@@ -103,7 +123,7 @@ class ReportTest extends TestCase
                  ->assertJsonPath('data.productos.0.producto.nombre', 'Tacos al Pastor');
     }
 
-    public function test_puede_obtener_rendimiento_de_meseros()
+    public function test_puede_obtener_rendimiento_de_meseros(): void
     {
         $mesero = User::factory()->create(['role' => 'mesero', 'name' => 'Carlos']);
         $mesa = Mesa::factory()->create();
