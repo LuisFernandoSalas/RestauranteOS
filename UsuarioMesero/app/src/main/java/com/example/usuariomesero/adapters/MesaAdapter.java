@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Adaptador para mostrar la lista de mesas en un RecyclerView.
@@ -71,14 +72,20 @@ public class MesaAdapter extends RecyclerView.Adapter<MesaAdapter.MesaViewHolder
                 holder.tvStatusPrice.setText(R.string.status_libre);
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.mesa_texto_libre));
                 break;
+
             case OCUPADA:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
-                holder.tvStatusPrice.setText(mesa.getPrecio());
+                // 🛠️ Formateamos el número a formato moneda ($180.00)
+                double totalOcupada = mesa.getTotal() != null ? mesa.getTotal() : 0.0;
+                holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f", totalOcupada));
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 break;
+
             case COBRO:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_cobro);
-                holder.tvStatusPrice.setText(mesa.getPrecio());
+                // 🛠️ Formateamos el número a formato moneda ($180.00)
+                double totalCobro = mesa.getTotal() != null ? mesa.getTotal() : 0.0;
+                holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f", totalCobro));
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 break;
         }

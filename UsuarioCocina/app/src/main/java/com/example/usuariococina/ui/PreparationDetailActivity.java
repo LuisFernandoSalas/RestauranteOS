@@ -57,8 +57,7 @@ public class PreparationDetailActivity extends AppCompatActivity {
         findViewById(R.id.btnCancelOrder).setOnClickListener(v -> showCancelOrderDialog());
         findViewById(R.id.btnPauseOrder).setOnClickListener(v -> showPauseProductDialog());
 
-        // --- AQUÍ EMPIEZA LA MAGIA REAL (Reemplazando setupDummyData) ---
-
+        // --- AQUÍ EMPIEZA LA MAGIA REAL ---
         String pedidoJson = getIntent().getStringExtra("PEDIDO_DATA");
 
         if (pedidoJson != null) {
@@ -76,15 +75,18 @@ public class PreparationDetailActivity extends AppCompatActivity {
 
             // 3. Pasamos los platillos reales al adaptador e inyectamos la petición Retrofit
             if (pedidoActual.getPlatillos() != null) {
+                currentOrderItems = pedidoActual.getPlatillos();
                 PrepItemsAdapter adapter = new PrepItemsAdapter(pedidoActual.getPlatillos(), new PrepItemsAdapter.OnItemStatusChangeListener() {
                     @Override
                     public void onStatusChange(int detalleId, String nuevoEstado) {
-                        // Ojo: Asegúrate de que "AppPrefs" y "TOKEN" son los que usas en tu Login
-                        android.content.SharedPreferences sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-                        String token = sharedPreferences.getString("TOKEN", "");
+
+                        // CORRECCIÓN 1: Credenciales correctas
+                        android.content.SharedPreferences sharedPreferences = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+                        String token = sharedPreferences.getString("AUTH_TOKEN", "");
+                        String authToken = "Bearer " + token;
 
                         apiService api = apiClient.getClient(token).create(apiService.class);
-                        Call<ResponseBody> call = api.cambiarEstadoPlatillo(detalleId, nuevoEstado);
+                        Call<ResponseBody> call = api.cambiarEstadoPlatillo(authToken, detalleId, nuevoEstado);
 
                         call.enqueue(new retrofit2.Callback<ResponseBody>() {
                             @Override
@@ -104,7 +106,6 @@ public class PreparationDetailActivity extends AppCompatActivity {
                     }
                 });
 
-                // Opcional: Asegurarnos de que el RecyclerView tenga su LayoutManager
                 rvPrepItems.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
                 rvPrepItems.setAdapter(adapter);
             }
@@ -126,8 +127,32 @@ public class PreparationDetailActivity extends AppCompatActivity {
         }
 
         dialogView.findViewById(R.id.btnReturnToPanel).setOnClickListener(v -> {
-            dialog.dismiss();
-            finish();
+
+            // CORRECCIÓN 2: Credenciales correctas
+            android.content.SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+            String token = prefs.getString("AUTH_TOKEN", "");
+            String authToken = "Bearer " + token;
+
+            apiService api = apiClient.getClient(token).create(apiService.class);
+
+            Call<ResponseBody> call = api.cambiarEstadoPedidoCompleto(authToken, pedidoActual.getPedidoId(), "entregado");
+            call.enqueue(new retrofit2.Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        android.widget.Toast.makeText(PreparationDetailActivity.this, "¡Pedido entregado!", android.widget.Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                        finish();
+                    } else {
+                        android.widget.Toast.makeText(PreparationDetailActivity.this, "Error al completar: " + response.code(), android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    android.widget.Toast.makeText(PreparationDetailActivity.this, "Error de red", android.widget.Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();
@@ -177,9 +202,39 @@ public class PreparationDetailActivity extends AppCompatActivity {
         });
 
         dialogView.findViewById(R.id.btnConfirmCancel).setOnClickListener(v -> {
-            selectedReasonBtn = null;
-            dialog.dismiss();
-            finish();
+            String motivo = etReason.getText().toString();
+
+            if (motivo.isEmpty()) {
+                android.widget.Toast.makeText(this, "Selecciona o escribe un motivo", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // CORRECCIÓN 3: Credenciales correctas
+            android.content.SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+            String token = prefs.getString("AUTH_TOKEN", "");
+            String authToken = "Bearer " + token;
+
+            apiService api = apiClient.getClient(token).create(apiService.class);
+
+            Call<ResponseBody> call = api.cancelarPedido(authToken, pedidoActual.getPedidoId(), motivo);
+            call.enqueue(new retrofit2.Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        android.widget.Toast.makeText(PreparationDetailActivity.this, "Pedido cancelado", android.widget.Toast.LENGTH_SHORT).show();
+                        selectedReasonBtn = null;
+                        dialog.dismiss();
+                        finish();
+                    } else {
+                        android.widget.Toast.makeText(PreparationDetailActivity.this, "Error al cancelar: " + response.code(), android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    android.widget.Toast.makeText(PreparationDetailActivity.this, "Error de red", android.widget.Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();
@@ -223,13 +278,15 @@ public class PreparationDetailActivity extends AppCompatActivity {
             }
         };
 
-        // Generación dinámica de Chips adaptada al nuevo modelo DetallePedido
+        // Generación dinámica de Chips
         for (DetallePedido item : currentOrderItems) {
             com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(this);
 
             String nombreItem = (item.getProducto() != null) ? item.getProducto() : "Desconocido";
 
             chip.setText(nombreItem);
+            chip.setTag(item.getDetalleId());
+
             chip.setCheckable(true);
             chip.setClickable(true);
             chip.setChipBackgroundColorResource(android.R.color.transparent);
@@ -272,14 +329,40 @@ public class PreparationDetailActivity extends AppCompatActivity {
             int checkedChipId = cgProducts.getCheckedChipId();
             com.google.android.material.chip.Chip selectedChip = dialogView.findViewById(checkedChipId);
             String productName = selectedChip.getText().toString();
+
+            int productId = (int) selectedChip.getTag();
             String duration = selectedDurationBtn.getText().toString();
 
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                     .setTitle("⚠️ Confirmar Pausa Crítica")
                     .setMessage("¿Estás seguro de pausar '" + productName + "'?\n\nEsta acción eliminará el producto del menú digital inmediatamente por " + duration + ".")
                     .setPositiveButton("Confirmar Pausa", (d, which) -> {
-                        android.widget.Toast.makeText(this, "Producto pausado: " + productName, android.widget.Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
+
+                        // CORRECCIÓN 4: Credenciales correctas
+                        android.content.SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+                        String token = prefs.getString("AUTH_TOKEN", "");
+                        String authToken = "Bearer " + token;
+
+                        apiService api = apiClient.getClient(token).create(apiService.class);
+
+                        Call<ResponseBody> call = api.pausarProducto(authToken, productId, duration);
+                        call.enqueue(new retrofit2.Callback<ResponseBody>() {
+                            @Override
+                            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                                if (response.isSuccessful()) {
+                                    android.widget.Toast.makeText(PreparationDetailActivity.this, "Producto pausado: " + productName, android.widget.Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
+                                } else {
+                                    android.widget.Toast.makeText(PreparationDetailActivity.this, "Error al pausar: " + response.code(), android.widget.Toast.LENGTH_SHORT).show();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                                android.widget.Toast.makeText(PreparationDetailActivity.this, "Falla de red", android.widget.Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
                     })
                     .setNegativeButton("Regresar", null)
                     .show();
@@ -289,43 +372,6 @@ public class PreparationDetailActivity extends AppCompatActivity {
     }
 
     private void setupDummyData() {
-        tvPrepTitle.setText("Detalle — Cargando...");
-        tvPrepMesaWaiter.setText("Esperando información de la mesa");
-
-        currentOrderItems.clear();
-
-        // ⚠️ NOTA: Eliminamos la creación de OrderItems falsos.
-        // Más adelante, pasaremos la lista real de detalles mediante un Intent desde OrdersActivity.
-        PrepItemsAdapter adapter = new PrepItemsAdapter(pedidoActual.getPlatillos(), new PrepItemsAdapter.OnItemStatusChangeListener() {
-            @Override
-            public void onStatusChange(int detalleId, String nuevoEstado) {
-                // Aquí hacemos la magia con Retrofit
-                android.content.SharedPreferences sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-                String token = sharedPreferences.getString("TOKEN", "");
-
-// 2. Le pasamos ese token a tu apiClient
-                apiService api = apiClient.getClient(token).create(apiService.class); // Usa tu cliente Retrofit
-                Call<ResponseBody> call = api.cambiarEstadoPlatillo(detalleId, nuevoEstado);
-
-                call.enqueue(new retrofit2.Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
-                        if (response.isSuccessful()) {
-                            Log.d("API_COCINA", "¡Platillo " + detalleId + " actualizado a " + nuevoEstado + "!");
-                        } else {
-                            Log.e("API_COCINA", "Error al actualizar: " + response.code());
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        Log.e("API_COCINA", "Falla de red: " + t.getMessage());
-                    }
-                });
-            }
-        });
-
-        RecyclerView recyclerView = findViewById(R.id.rvPreparationItems);
-        recyclerView.setAdapter(adapter);
+        // ... (Este método lo mantenemos intacto por si en algún momento deseas referenciarlo, aunque ya no se llama en el onCreate)
     }
 }

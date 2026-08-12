@@ -1,6 +1,5 @@
 package com.example.usuariococina.models;
 
-import com.example.usuariococina.models.DetallePedido;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
@@ -25,6 +24,11 @@ public class PedidoResponse {
 
 
     // --- Y SUS GETTERS ---
+
+    public int getPedidoId() {
+        return pedidoId;
+    }
+
     public int getMesa() { return mesa; }
 
     public String getMesero() { return mesero; }

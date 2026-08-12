@@ -31,8 +31,8 @@ public class Mesa {
     @SerializedName("estado")
     private Estado estado;
 
-    @SerializedName("precio") // Si tu API devuelve el total aquí
-    private String precio;
+    @SerializedName("total_actual") // Si tu API devuelve el total aquí
+    private String subtotal;
 
     @SerializedName("items_pedido") // Ajustar si Laravel lo manda como "detalles" o "productos"
     private List<ItemOrden> itemsPedido;
@@ -48,7 +48,7 @@ public class Mesa {
     public Mesa(int numero, Estado estado, String precio, List<ItemOrden> itemsPedido, String nombreInformacion) {
         this.numero = numero;
         this.estado = estado;
-        this.precio = precio;
+        this.subtotal = subtotal;
         this.itemsPedido = itemsPedido;
         this.nombreInformacion = nombreInformacion;
     }
@@ -66,12 +66,19 @@ public class Mesa {
         this.estado = estado;
     }
 
-    public String getPrecio() {
-        return precio;
+    public Double getTotal() {
+        if (subtotal != null && !subtotal.isEmpty()) {
+            try {
+                return Double.parseDouble(subtotal);
+            } catch (NumberFormatException e) {
+                return 0.0;
+            }
+        }
+        return 0.0;
     }
 
     public void setPrecio(String precio) {
-        this.precio = precio;
+        this.subtotal = precio;
     }
 
     public List<ItemOrden> getItemsPedido() {

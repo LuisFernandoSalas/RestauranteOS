@@ -10,13 +10,24 @@ public class LoginResponse {
     @SerializedName("access_token")
     private String token; // El Bearer token que Sanctum genera
 
-    // 👇 ESTOS SON LOS MÉTODOS QUE JAVA ESTABA BUSCANDO 👇
-
     public String getToken() {
         return token;
     }
 
     public User getUser() {
         return user;
+    }
+
+    // 👈 Agregamos la subclase aquí mismo para leer el rol
+    public static class User {
+        private int id;
+        private String name;
+        private String role;
+        private String username;
+
+        public int getId() { return id; }
+        public String getName() { return name; }
+        public String getRole() { return role; }
+        public String getUsername() { return username; }
     }
 }

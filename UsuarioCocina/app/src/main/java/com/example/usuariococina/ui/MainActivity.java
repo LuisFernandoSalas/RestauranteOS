@@ -97,12 +97,12 @@ public class MainActivity extends AppCompatActivity {
                         // 🚨 AQUÍ AGREGAMOS LA VALIDACIÓN DEL ROL 🚨
                         String userRole = loginResponse.getUser().getRole();
 
-                        if (userRole != null && userRole.equalsIgnoreCase("cocinero")) {
+                        if (userRole.equalsIgnoreCase("cocinero")) {
                             // ✅ EL ROL ES CORRECTO, LO DEJAMOS PASAR
                             Log.d(TAG, "onResponse: ¡Login exitoso! Token: " + loginResponse.getAccessToken());
                             Toast.makeText(MainActivity.this, "Bienvenido " + loginResponse.getUser().getName(), Toast.LENGTH_SHORT).show();
 
-                            // Guardamos el token
+                            // Guardamos el token para no tener que iniciar sesión a cada rato
                             getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE)
                                     .edit()
                                     .putString("AUTH_TOKEN", loginResponse.getAccessToken())
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
                             finish();
 
                         } else {
-                            // ⛔ EL ROL NO ES COCINERO, BLOQUEAMOS EL ACCESO
+                            // ⛔ EL ROL NO ES DE COCINA, BLOQUEAMOS EL ACCESO
                             Log.w(TAG, "onResponse: Bloqueado. El usuario intentó entrar con rol: " + userRole);
                             Toast.makeText(MainActivity.this, "⛔ Acceso denegado: Esta app es exclusiva de Cocina", Toast.LENGTH_LONG).show();
                         }

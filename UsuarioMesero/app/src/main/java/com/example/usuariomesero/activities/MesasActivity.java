@@ -89,6 +89,13 @@ public class MesasActivity extends AppCompatActivity {
         cargarMesasDesdeAPI();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Esto obligará a la app a consultar Laravel CADA VEZ que regrese a esta pantalla
+        cargarMesasDesdeAPI();
+    }
+
     private void cargarMesasDesdeAPI() {
         String token = sesionManager.getAuthToken();
         if (token == null) {
@@ -136,7 +143,7 @@ public class MesasActivity extends AppCompatActivity {
             } else if (mesa.getEstado() == Mesa.Estado.COBRO) {
                 Intent intent = new Intent(MesasActivity.this, CobroActivity.class);
                 intent.putExtra("mesa_numero", mesa.getNumero());
-                intent.putExtra("total_pedido", mesa.getPrecio());
+                intent.putExtra("total_pedido", mesa.getTotal());
                 genericLauncher.launch(intent);
             }
         });

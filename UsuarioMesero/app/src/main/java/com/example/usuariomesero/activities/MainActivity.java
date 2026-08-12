@@ -93,12 +93,24 @@ public class MainActivity extends AppCompatActivity {
                 btnLogin.setEnabled(true);
 
                 if (response.isSuccessful() && response.body() != null) {
-                    // ¡Éxito!
-                    String token = response.body().getToken();
-                    String nombreUsuario = response.body().getUser().getName();
 
-                    sesionManager.saveAuthToken(token);
-                    irAMesas(nombreUsuario);
+                    // 🚨 AQUÍ AGREGAMOS LA VALIDACIÓN DEL ROL PARA MESEROS 🚨
+                    String userRole = response.body().getUser().getRole();
+
+                    if (userRole != null && userRole.equalsIgnoreCase("mesero")) {
+                        // ✅ EL ROL ES CORRECTO, LO DEJAMOS PASAR
+                        String token = response.body().getToken();
+                        String nombreUsuario = response.body().getUser().getName();
+
+                        sesionManager.saveAuthToken(token);
+                        irAMesas(nombreUsuario);
+
+                    } else {
+                        // ⛔ EL ROL NO ES MESERO (Es cocinero, admin, etc.), BLOQUEAMOS EL ACCESO
+                        android.util.Log.w("LOGIN_ERROR", "Bloqueado. El usuario intentó entrar con rol: " + userRole);
+                        Toast.makeText(MainActivity.this, "⛔ Acceso denegado: Esta app es exclusiva de Meseros", Toast.LENGTH_LONG).show();
+                    }
+
                 } else {
                     // AQUÍ CAPTURAMOS EL ERROR DE LARAVEL
                     try {
@@ -108,7 +120,14 @@ public class MainActivity extends AppCompatActivity {
                         android.util.Log.e("LOGIN_ERROR", "Error al leer el body: " + e.getMessage());
                     }
 
-                    Toast.makeText(MainActivity.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
+                    // 👈 MANEJO DE ERRORES HTTP DE FORMA AMIGABLE
+                    if (response.code() == 401) {
+                        Toast.makeText(MainActivity.this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show();
+                    } else if (response.code() == 422) {
+                        Toast.makeText(MainActivity.this, "Formato de datos inválido", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Error del servidor (" + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
