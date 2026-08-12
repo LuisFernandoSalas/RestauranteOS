@@ -72,8 +72,17 @@ Route::middleware('auth:sanctum')->group(function () {
     //  6. MÓDULO DE COCINA (Kitchen Display System - KDS)
     // ==========================================
     Route::get('/cocina/pedidos', [CocinaController::class, 'index']);
+    
+    // --- ACCIONES SOBRE PLATILLO INDIVIDUAL ---
+    // Acepta body: { "estado": "en_preparacion" | "pausado" | "listo" | "cancelado" }
     Route::patch('/cocina/detalles/{id}/estado', [CocinaController::class, 'updatePlatilloEstado']);
+
+    // --- ACCIONES SOBRE EL PEDIDO COMPLETO ---
+    // Acepta body: { "estado": "en_preparacion" | "pausado" | "listo" }
+    Route::patch('/cocina/pedidos/{id}/estado', [CocinaController::class, 'updatePedidoEstado']);
     Route::post('/cocina/pedidos/{id}/cancelar', [CocinaController::class, 'cancelarPedido']);
+
+    // --- PAUSAR PRODUCTO DEL MENÚ GENERAL (Regla 86) ---
     Route::post('/cocina/productos/{id}/pausar', [CocinaController::class, 'pausarProducto']);
 
     // ==========================================
