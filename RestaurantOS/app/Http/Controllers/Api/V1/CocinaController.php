@@ -11,24 +11,23 @@ use App\Models\DetallePedido;
 use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class CocinaController extends Controller
 {
     /**
      * GET /api/v1/cocina/pedidos
-     * Obtiene todas las comandas activas en la cocina (No pagadas, No canceladas).
-     * Excluye datos financieros por motivos de seguridad y roles.
+     * Obtiene todas las comandas activas en la cocina.
      */
     public function index(): JsonResponse
     {
-        $pedidos = Pedido::whereIn('estado', ['pendiente', 'en_preparacion', 'listo'])
+        $pedidos = Pedido::whereIn('estado', ['pendiente', 'en_preparacion', 'pausado', 'listo'])
             ->with(['mesa', 'mesero:id,name', 'detalles.producto:id,nombre'])
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // Estructurar respuesta limpia mapeada para el Grid Horizontal de la Tablet
         $comandas = $pedidos->map(function ($pedido) {
             return [
                 'pedido_id' => $pedido->id,
@@ -53,6 +52,7 @@ class CocinaController extends Controller
             'resumen' => [
                 'total_comandas' => $comandas->count(),
                 'en_preparacion' => $pedidos->where('estado', 'en_preparacion')->count(),
+                'pausados' => $pedidos->where('estado', 'pausado')->count(),
                 'pendientes' => $pedidos->where('estado', 'pendiente')->count(),
             ],
             'comandas' => $comandas
@@ -61,7 +61,7 @@ class CocinaController extends Controller
 
     /**
      * PATCH /api/v1/cocina/detalles/{id}/estado
-     * Cambia el estado de un platillo individual (KDS Interactivo).
+     * Cambia el estado de un PLATILLO INDIVIDUAL (en_preparacion, pausado, listo, cancelado)
      */
     public function updatePlatilloEstado(UpdateDetalleEstadoRequest $request, $id): JsonResponse
     {
@@ -72,16 +72,19 @@ class CocinaController extends Controller
                 'estado' => $request->estado
             ]);
 
-            // Lógica inteligente: Si el chef cambia un platillo a "en_preparacion",
-            // el pedido padre pasa automáticamente a "en_preparacion".
             $pedido = $detalle->pedido;
-            if ($request->estado === 'en_preparacion' && $pedido->estado === 'pendiente') {
+
+            // Si el chef pone un platillo en preparación y el pedido estaba pendiente/pausado
+            if ($request->estado === 'en_preparacion' && in_array($pedido->estado, ['pendiente', 'pausado'])) {
                 $pedido->update(['estado' => 'en_preparacion']);
             }
 
-            // Si todos los platillos individuales están 'listos', el pedido se marca como listo
-            $todosListos = !$pedido->detalles()->where('estado', '!=', 'listo')->exists();
-            if ($todosListos) {
+            // Si todos los platillos activos están 'listos', el pedido completo pasa a 'listo'
+            $platillosPendientes = $pedido->detalles()
+                ->whereNotIn('estado', ['listo', 'cancelado'])
+                ->exists();
+
+            if (!$platillosPendientes) {
                 $pedido->update(['estado' => 'listo']);
             }
         });
@@ -98,8 +101,40 @@ class CocinaController extends Controller
     }
 
     /**
+     * PATCH /api/v1/cocina/pedidos/{id}/estado
+     * Cambia el estado del PEDIDO COMPLETO (en_preparacion, pausado, listo, cancelado)
+     */
+    public function updatePedidoEstado(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'estado' => ['required', Rule::in(['pendiente', 'en_preparacion', 'pausado', 'listo', 'cancelado'])]
+        ]);
+
+        $pedido = Pedido::findOrFail($id);
+
+        DB::transaction(function () use ($pedido, $request) {
+            $pedido->update(['estado' => $request->estado]);
+
+            // Cascada opcional: Al cambiar estado del pedido, sincronizar sus platillos internos
+            if (in_array($request->estado, ['en_preparacion', 'pausado', 'listo'])) {
+                $pedido->detalles()
+                    ->where('estado', '!=', 'cancelado')
+                    ->update(['estado' => $request->estado]);
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'mensaje' => "El pedido #{$pedido->id} ha cambiado a estado '{$pedido->estado}'.",
+            'data' => [
+                'pedido_id' => $pedido->id,
+                'nuevo_estado' => $pedido->estado
+            ]
+        ], 200);
+    }
+
+    /**
      * POST /api/v1/cocina/pedidos/{id}/cancelar
-     * Cancela una orden completa guardando auditoría fiscal sin romper las llaves foráneas.
      */
     public function cancelarPedido(CancelarPedidoRequest $request, $id): JsonResponse
     {
@@ -110,22 +145,18 @@ class CocinaController extends Controller
         }
 
         DB::transaction(function () use ($pedido, $request) {
-            // Actualizar estado y auditoría antes del soft delete
             $pedido->update([
                 'estado' => 'cancelado',
                 'motivo_cancelacion' => $request->motivo_cancelacion,
                 'cobrado_por' => $request->user()?->id ?? $pedido->user_id,
             ]);
 
-            // Cancelar todos sus detalles internos
             $pedido->detalles()->update(['estado' => 'cancelado']);
 
-            // Liberar la mesa
             if ($pedido->mesa) {
                 $pedido->mesa->update(['estado' => 'libre']);
             }
 
-            // Ejecuta el borrado lógico seguro
             $pedido->delete();
         });
 
@@ -137,7 +168,7 @@ class CocinaController extends Controller
 
     /**
      * POST /api/v1/cocina/productos/{id}/pausar
-     * Función 86: Desactiva un producto temporalmente del menú digital (App Meseros / QR)
+     * Función 86: Desactiva un producto temporalmente del menú digital.
      */
     public function pausarProducto(PausarProductoRequest $request, $id): JsonResponse
     {
@@ -147,7 +178,7 @@ class CocinaController extends Controller
         $pausadoHasta = match ($duracion) {
             '30_min' => Carbon::now()->addMinutes(30),
             '1_hora' => Carbon::now()->addHour(),
-            'indefinido' => Carbon::now()->addYears(10), // Representación de "Hasta reactivar"
+            'indefinido' => Carbon::now()->addYears(10),
         };
 
         $producto->update([
