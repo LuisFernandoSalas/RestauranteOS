@@ -192,7 +192,9 @@
                         android:layout_height="wrap_content"
                         android:text="Comandas activas"
                         android:textColor="#5D4037" />
+                    <!-- AQUÍ ESTÁ EL ID -->
                     <TextView
+                        android:id="@+id/tvComandasActivas"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
@@ -210,7 +212,9 @@
                         android:layout_height="wrap_content"
                         android:text="Pendientes"
                         android:textColor="#5D4037" />
+                    <!-- AQUÍ ESTÁ EL ID -->
                     <TextView
+                        android:id="@+id/tvPendientes"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
@@ -228,7 +232,9 @@
                         android:layout_height="wrap_content"
                         android:text="En preparación"
                         android:textColor="#5D4037" />
+                    <!-- AQUÍ ESTÁ EL ID -->
                     <TextView
+                        android:id="@+id/tvEnPreparacion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
@@ -245,7 +251,9 @@
                         android:layout_height="wrap_content"
                         android:text="Listas"
                         android:textColor="#5D4037" />
+                    <!-- AQUÍ ESTÁ EL ID -->
                     <TextView
+                        android:id="@+id/tvListas"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"

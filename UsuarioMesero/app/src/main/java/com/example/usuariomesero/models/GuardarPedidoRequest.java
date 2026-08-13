@@ -29,10 +29,14 @@ public class GuardarPedidoRequest {
         @SerializedName("nota")
         private String nota;
 
-        public ProductoItem(int id, int cantidad, String nota) {
+        @SerializedName("combo_id")
+        private int comboId;
+
+        public ProductoItem(int id, int cantidad, String nota, int comboId) {
             this.id = id;
             this.cantidad = cantidad;
             this.nota = nota;
+            this.comboId = comboId; // Asignamos el valor
         }
     }
 }

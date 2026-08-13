@@ -8,8 +8,12 @@ public class ComandasApiResponse {
     @SerializedName("status")
     private String status;
 
-    // Aquí le decimos a Gson que busque el arreglo llamado "comandas"
-    // y lo meta en tu modelo de lista
+    @SerializedName("resumen")
+    private Resumen resumen;
+
+    public Resumen getResumen() {
+        return resumen;
+    }
     @SerializedName("comandas")
     private List<PedidoResponse> comandas;
 

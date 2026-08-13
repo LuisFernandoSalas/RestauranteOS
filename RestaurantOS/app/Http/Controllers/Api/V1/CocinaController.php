@@ -38,6 +38,7 @@ class CocinaController extends Controller
                 'platillos' => $pedido->detalles->map(function ($detalle) {
                     return [
                         'detalle_id' => $detalle->id,
+                        'producto_id' => $detalle->producto->id,
                         'producto' => $detalle->producto->nombre,
                         'cantidad' => $detalle->cantidad,
                         'nota' => $detalle->nota,
@@ -65,8 +66,22 @@ class CocinaController extends Controller
      */
     public function updatePlatilloEstado(UpdateDetalleEstadoRequest $request, $id): JsonResponse
     {
-        $detalle = DetallePedido::findOrFail($id);
+        // Cargar el detalle junto con su producto base
+        $detalle = DetallePedido::with('producto')->findOrFail($id);
         
+        // 1. Verificamos si el producto base se encuentra pausado temporalmente
+        $productoEstaPausado = $detalle->producto 
+            && $detalle->producto->pausado_hasta 
+            && Carbon::parse($detalle->producto->pausado_hasta)->isFuture();
+
+        // 2. REGLA DE NEGOCIO: Bloquear 'listo' si el platillo o el producto base están pausados
+        if (($detalle->estado === 'pausado' || $productoEstaPausado) && $request->estado === 'listo') {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'No puedes marcar este platillo como listo porque el producto se encuentra pausado.'
+            ], 422);
+        }
+
         DB::transaction(function () use ($detalle, $request) {
             $detalle->update([
                 'estado' => $request->estado
@@ -79,7 +94,7 @@ class CocinaController extends Controller
                 $pedido->update(['estado' => 'en_preparacion']);
             }
 
-            // Si todos los platillos activos están 'listos', el pedido completo pasa a 'listo'
+            // Si todos los platillos activos están 'listos' o 'cancelados', el pedido completo pasa a 'listo'
             $platillosPendientes = $pedido->detalles()
                 ->whereNotIn('estado', ['listo', 'cancelado'])
                 ->exists();
@@ -181,9 +196,17 @@ class CocinaController extends Controller
             'indefinido' => Carbon::now()->addYears(10),
         };
 
-        $producto->update([
-            'pausado_hasta' => $pausadoHasta
-        ]);
+        DB::transaction(function () use ($producto, $pausadoHasta) {
+            // 1. Desactivamos el producto base del menú digital
+            $producto->update([
+                'pausado_hasta' => $pausadoHasta
+            ]);
+
+            // 2. Sincronizamos las comandas activas: cambia los detalles a 'pausado'
+            DetallePedido::where('producto_id', $producto->id)
+                ->whereIn('estado', ['pendiente', 'en_preparacion'])
+                ->update(['estado' => 'pausado']);
+        });
 
         return response()->json([
             'status' => 'success',

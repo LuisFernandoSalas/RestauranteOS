@@ -38,7 +38,10 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.OrderViewH
     }
 
     public void setOrders(List<PedidoResponse> newOrders) {
+        // 1. Reemplazamos la lista actual por la nueva (filtrada)
         this.orders = newOrders;
+
+        // 2. ¡ESTA LÍNEA ES LA MAGIA! Obliga al RecyclerView a borrar las tarjetas viejas de la pantalla
         notifyDataSetChanged();
     }
 

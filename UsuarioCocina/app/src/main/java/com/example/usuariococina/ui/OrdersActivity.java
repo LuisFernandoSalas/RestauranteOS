@@ -1,5 +1,7 @@
 package com.example.usuariococina.ui;
 
+import android.content.Intent; // <-- NUEVO IMPORT
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -14,10 +16,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.usuariococina.models.ComandasApiResponse;
 import com.example.usuariococina.models.PedidoResponse;
+import com.example.usuariococina.models.Resumen;
 import com.example.usuariococina.adapters.OrdersAdapter;
 import com.example.usuariococina.api.apiClient;
 import com.example.usuariococina.api.apiService;
 import com.example.usuariococina.R;
+import com.google.gson.Gson; // <-- Asegúrate de tener esto para enviar el pedido como JSON
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +34,8 @@ public class OrdersActivity extends AppCompatActivity {
 
     private static final String TAG = "Cocina_OrdersActivity";
     private RecyclerView rvOrders;
-    private OrdersAdapter adapter; // Lo declaramos global para poder actualizarlo
+    private OrdersAdapter adapter;
+    private String resumenJsonGlobal = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +53,8 @@ public class OrdersActivity extends AppCompatActivity {
 
         rvOrders = findViewById(R.id.rvOrders);
 
+        // (ELIMINAMOS LOS FINDVIEWBYID DE LOS TEXTVIEWS PORQUE ESTÁN EN LA OTRA PANTALLA)
+
         int spanCount = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? 4 : 2;
         rvOrders.setLayoutManager(new GridLayoutManager(this, spanCount));
 
@@ -60,12 +67,18 @@ public class OrdersActivity extends AppCompatActivity {
         cargarPedidosDeApi();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume: La pantalla volvió al frente, recargando pedidos...");
+        cargarPedidosDeApi();
+    }
+
     private void setupAdapter() {
-        // Inicializamos el adaptador con una lista vacía mientras carga la API
         adapter = new OrdersAdapter(this, new ArrayList<>(), order -> {
             String numMesa = String.valueOf(order.getMesa());
             Log.d(TAG, "onOrderClick: Solicitando detalles para la Mesa " + numMesa);
-            showOrderDetailDialog(order);
+            showOrderDetailDialog(order); // Aquí se activa el envío a la otra pantalla
         });
         rvOrders.setAdapter(adapter);
     }
@@ -73,8 +86,7 @@ public class OrdersActivity extends AppCompatActivity {
     private void cargarPedidosDeApi() {
         Log.d(TAG, "cargarPedidosDeApi: Solicitando comandas al servidor...");
 
-        // 1. Recuperamos el token guardado durante el Login
-        android.content.SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
         String token = prefs.getString("AUTH_TOKEN", null);
 
         if (token == null) {
@@ -83,23 +95,32 @@ public class OrdersActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. Usamos TU método que ya inyecta el token automáticamente en el Interceptor
         apiService service = apiClient.getApiService(token);
-
-        // 3. Hacemos la llamada limpia sin pasar parámetros extra
-        // 3. Hacemos la llamada con el nuevo modelo
         Call<ComandasApiResponse> call = service.obtenerPedidosCocina();
 
         call.enqueue(new Callback<ComandasApiResponse>() {
             @Override
             public void onResponse(Call<ComandasApiResponse> call, Response<ComandasApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // 👇 AQUI ESTA LA MAGIA: Extraemos la lista del envoltorio
+
+                    // NUEVO 2: Convertimos el resumen a texto INMEDIATAMENTE
+                    Resumen resumen = response.body().getResumen();
+                    if (resumen != null) {
+                        resumenJsonGlobal = new Gson().toJson(resumen);
+                        Log.d("DEBUG_COCINA", "API -> Resumen guardado como texto: " + resumenJsonGlobal);
+                    }
+
                     List<PedidoResponse> pedidosReales = response.body().getComandas();
 
                     if (pedidosReales != null) {
-                        Log.d(TAG, "Éxito: Se descargaron " + pedidosReales.size() + " pedidos");
-                        adapter.setOrders(pedidosReales);
+                        List<PedidoResponse> pedidosPendientes = new ArrayList<>();
+
+                        for (PedidoResponse p : pedidosReales) {
+                            if (p.getEstadoGeneral() != null && !"listo".equalsIgnoreCase(p.getEstadoGeneral())) {
+                                pedidosPendientes.add(p);
+                            }
+                        }
+                        adapter.setOrders(pedidosPendientes);
                     }
                 } else {
                     Log.e(TAG, "Error en la respuesta: " + response.code());
@@ -116,10 +137,23 @@ public class OrdersActivity extends AppCompatActivity {
     }
 
     public void showOrderDetailDialog(PedidoResponse order) {
-        // Úsalo solo si quieres mantener el texto "Sin Mesa" cuando no haya número
         String numMesa = (order.getMesa() > 0) ? String.valueOf(order.getMesa()) : "Sin Mesa";
         Log.d(TAG, "showOrderDetailDialog: Construyendo diálogo para mesa " + numMesa);
 
-        // ... (Tu código de AlertDialog original, pero adaptado al nuevo PedidoResponse) ...
+        // --- NUEVO: ENVIAR DATOS A LA PANTALLA DE DETALLE ---
+        Intent intent = new Intent(this, PreparationDetailActivity.class);
+
+        // Enviamos el pedido completo convertido a String
+        intent.putExtra("PEDIDO_DATA", new Gson().toJson(order));
+
+        // Enviamos el resumen empacado como texto (si no está vacío)
+        if (resumenJsonGlobal != null && !resumenJsonGlobal.isEmpty()) {
+            Log.d("DEBUG_COCINA", "INTENT -> Enviando resumen empacado en JSON");
+            intent.putExtra("RESUMEN_DATA", resumenJsonGlobal);
+        } else {
+            Log.e("DEBUG_COCINA", "INTENT -> ¡ALERTA! El resumen de texto estaba vacío justo antes de abrir el pedido");
+        }
+
+        startActivity(intent);
     }
 }

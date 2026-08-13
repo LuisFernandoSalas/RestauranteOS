@@ -42,7 +42,7 @@ public interface apiService {
     Call<ResponseBody> cancelarPedido(
             @Header("Authorization") String token,
             @Path("id") int pedidoId,
-            @Field("motivo") String motivo
+            @Field("motivo_cancelacion") String motivo
     );
 
     // 3. Pausar un producto del menú
@@ -54,11 +54,12 @@ public interface apiService {
             @Field("duracion") String duracion
     );
 
+    // Nuevo método para cambiar el estado de TODO el pedido desde cocina
     @FormUrlEncoded
-    @PATCH("cocina/pedidos/{id}/estado") // O la ruta que manejes para el pedido en tu Laravel
+    @PATCH("cocina/pedidos/{id}/estado")
     Call<ResponseBody> cambiarEstadoPedidoCompleto(
             @Header("Authorization") String token,
             @Path("id") int pedidoId,
-            @Field("estado") String nuevoEstado
+            @Field("estado") String estado
     );
 }

@@ -91,6 +91,23 @@ class DatabaseSeeder extends Seeder
             'pausado_hasta' => null
         ]);
 
+
+        Producto::create([
+            'nombre'        => 'Algas fritas',
+            'precio'        => 65.00,
+            'categoria_id'  => $categoriaEntrada->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
+        ]);
+
+        Producto::create([
+            'nombre'        => 'Tacos renacimiento',
+            'precio'        => 50.00,
+            'categoria_id'  => $categoriaPlatoFuerte->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
+        ]);
+
         Producto::create([
             'nombre'        => 'Agua de Jamaica',
             'precio'        => 20.00,
@@ -100,8 +117,31 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Producto::create([
+            'nombre'        => 'Agua de Horchata',
+            'precio'        => 20.00,
+            'categoria_id'  => $categoriaBebida->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
+        ]);
+
+        Producto::create([
+            'nombre'        => 'Soda pop',
+            'precio'        => 20.00,
+            'categoria_id'  => $categoriaBebida->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
+        ]);
+
+        Producto::create([
             'nombre'        => 'Pastel de Chocolate',
             'precio'        => 35.00,
+            'categoria_id'  => $categoriaPostre->id,
+            'estado'        => 'activo',
+            'pausado_hasta' => null
+        ]);
+        Producto::create([
+            'nombre'        => 'Popsipatitas',
+            'precio'        => 20.00,
             'categoria_id'  => $categoriaPostre->id,
             'estado'        => 'activo',
             'pausado_hasta' => null

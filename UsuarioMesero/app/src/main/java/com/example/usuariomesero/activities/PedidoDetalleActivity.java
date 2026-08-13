@@ -91,9 +91,10 @@ public class PedidoDetalleActivity extends AppCompatActivity {
         List<GuardarPedidoRequest.ProductoItem> productosItem = new ArrayList<>();
         for (ItemOrden item : listaOrden) {
             productosItem.add(new GuardarPedidoRequest.ProductoItem(
-                    item.getProducto().getId(), // ID real del producto en MySQL
+                    item.getProducto().getId(), // ID real del producto
                     item.getCantidad(),
-                    item.getNota()
+                    item.getNota(),
+                    0 // 👇 Mandamos 0 por default como número de combo
             ));
         }
 

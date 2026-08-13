@@ -1,17 +1,20 @@
 package com.example.usuariococina.adapters;
 
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.usuariococina.models.DetallePedido;
 import com.example.usuariococina.R;
+import com.example.usuariococina.models.DetallePedido;
 
 import java.util.List;
 
@@ -23,6 +26,7 @@ public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.View
     public interface OnItemStatusChangeListener {
         void onStatusChange(int detalleId, String nuevoEstado);
     }
+
     public PrepItemsAdapter(List<DetallePedido> items, OnItemStatusChangeListener listener) {
         this.items = items;
         this.listener = listener;
@@ -40,10 +44,10 @@ public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.View
         DetallePedido item = items.get(position);
 
         String nombreItem = (item.getProducto() != null) ? item.getProducto() : "Desconocido";
-
         holder.tvName.setText(nombreItem);
         holder.tvQuantity.setText(String.valueOf(item.getCantidad()));
 
+        // Manejo de notas opcionales
         if (item.getNota() != null && !item.getNota().trim().isEmpty()) {
             holder.tvNote.setText(item.getNota());
             holder.llNotes.setVisibility(View.VISIBLE);
@@ -51,32 +55,69 @@ public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.View
             holder.llNotes.setVisibility(View.GONE);
         }
 
-        // 1. Leemos el estado REAL del modelo al pintar la vista
-        if (item.isListo()) { // Asegúrate de tener este getter en DetallePedido
+        // EVALUACIÓN DE ESTADOS
+        boolean isPausado = "pausado".equalsIgnoreCase(item.getEstadoPlatillo());
+        boolean isListo = item.isListo() || "listo".equalsIgnoreCase(item.getEstadoPlatillo());
+
+        if (isPausado) {
+            markAsPaused(holder);
+        } else if (isListo) {
             markAsReady(holder);
         } else {
             markAsInPrep(holder);
         }
 
-        // 2. Actualizamos el modelo y HACEMOS LA PETICIÓN
+        int idPlatillo = (item.getDetalleId() > 0) ? item.getDetalleId() : item.getId();
+
+        // ACCIÓN: Botón "✓ Listo"
         holder.btnReady.setOnClickListener(v -> {
+            if (isPausado) {
+                Toast.makeText(v.getContext(), "⚠️ Este platillo está pausado en el menú.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             item.setListo(true);
+            item.setEstadoPlatillo("listo");
             notifyItemChanged(position);
-            // Avisamos a la Activity que mande "entregado" a Laravel
-            if(listener != null) listener.onStatusChange(item.getId(), "entregado");
+
+            if (listener != null) {
+                listener.onStatusChange(idPlatillo, "listo");
+            }
         });
 
+        // ACCIÓN: Botón "En prep."
         holder.btnPrep.setOnClickListener(v -> {
+            if (isPausado) {
+                Toast.makeText(v.getContext(), "⚠️ Este platillo está pausado en el menú.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             item.setListo(false);
+            item.setEstadoPlatillo("en_preparacion");
             notifyItemChanged(position);
-            // Avisamos a la Activity que mande "en_preparacion" a Laravel
-            if(listener != null) listener.onStatusChange(item.getId(), "en_preparacion");
+
+            if (listener != null) {
+                listener.onStatusChange(idPlatillo, "en_preparacion");
+            }
         });
+    }
+
+    // --- ESTADOS VISUALES DEL RECYCLERVIEW ---
+
+    private void markAsPaused(ViewHolder holder) {
+        holder.btnReady.setText("⏸ PAUSADO");
+        holder.btnReady.setEnabled(false);
+        holder.btnReady.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#9E9E9E"))); // Gris
+        holder.btnPrep.setVisibility(View.GONE);
+        holder.cardContainer.setCardBackgroundColor(Color.parseColor("#F5F5F5")); // Tarjeta tenue
+        holder.tvName.setAlpha(0.5f);
+        holder.tvQuantity.setAlpha(0.5f);
     }
 
     private void markAsReady(ViewHolder holder) {
         holder.btnReady.setText("✓ LISTO");
-        holder.btnReady.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7A3520")));
+        holder.btnReady.setEnabled(true);
+        holder.btnReady.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#7A3520")));
         holder.btnPrep.setVisibility(View.GONE);
         holder.cardContainer.setCardBackgroundColor(Color.parseColor("#FFF5F2"));
         holder.tvName.setAlpha(0.5f);
@@ -85,10 +126,11 @@ public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.View
 
     private void markAsInPrep(ViewHolder holder) {
         holder.btnReady.setText("✓ Listo");
-        holder.btnReady.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7A3520")));
+        holder.btnReady.setEnabled(true);
+        holder.btnReady.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#7A3520")));
         holder.btnPrep.setVisibility(View.VISIBLE);
         holder.btnPrep.setText("En prep.");
-        holder.btnPrep.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#C1440E")));
+        holder.btnPrep.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C1440E")));
         holder.cardContainer.setCardBackgroundColor(Color.WHITE);
         holder.tvName.setAlpha(1.0f);
         holder.tvQuantity.setAlpha(1.0f);
@@ -97,6 +139,11 @@ public class PrepItemsAdapter extends RecyclerView.Adapter<PrepItemsAdapter.View
     @Override
     public int getItemCount() {
         return items != null ? items.size() : 0;
+    }
+
+    public void setItems(List<DetallePedido> newItems) {
+        this.items = newItems;
+        notifyDataSetChanged();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
