@@ -1,17 +1,23 @@
 package vistas;
 
+import modelos.Empleado;
+import servicios.ApiClient;
+
 import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
+public class PanelEmpleados extends JPanel implements Actualizables {
 
+    @Override
+    public void recargarDatos() {
+        // Al presionar el botón en el menú lateral, esto volverá a hacer la petición HTTP
+        cargarEmpleadosDesdeBackend();
+    }
 
-public class PanelEmpleados extends JPanel {
-
-    // ─── PALETA DE COLORES (congruente con el resto de RestaurantOS) ───
+    // ─── PALETA DE COLORES ───
     private static final Color C_BG        = new Color(0xFBF5EC);
     private static final Color C_ACCENT    = new Color(0x6B2D1A);
     private static final Color C_DIV_LINE  = new Color(0xC8A882);
@@ -24,7 +30,7 @@ public class PanelEmpleados extends JPanel {
     private static final Color C_ALT_ROW   = new Color(0xFAF4EE);
     private static final Color C_BTN_DEL   = new Color(0xC03020);
 
-    // ─── COLORES POR ROL (badge + avatar) ───
+    // ─── COLORES POR ROL ───
     private static final Color ROL_MESERO_BG   = new Color(0xDCEAF9);
     private static final Color ROL_MESERO_T    = new Color(0x2D5F8A);
     private static final Color ROL_COCINA_BG   = new Color(0xF7E6C4);
@@ -34,33 +40,24 @@ public class PanelEmpleados extends JPanel {
     private static final Color ROL_ADMIN_BG    = new Color(0xF3DAD2);
     private static final Color ROL_ADMIN_T     = new Color(0x8A3A20);
 
-    // ─── MODELO DE DATOS ────────────────────────────
-    static class Empleado {
-        String id, nombre, username, rol;
-        Empleado(String id, String nombre, String username, String rol) {
-            this.id = id; this.nombre = nombre; this.username = username; this.rol = rol;
-        }
-    }
-
+    // ─── SERVICIO Y DATOS ───
+    private final ApiClient apiClient = new ApiClient();
     private final List<Empleado> empleados = new ArrayList<>();
 
-    // ─── COMPONENTES ────────────────────────────────
+    // ─── COMPONENTES ───
     private JTextField txtNombre, txtUsername;
     private JPasswordField txtPassword, txtConfirmPassword;
     private JComboBox<String> cmbRol;
     private JPanel panelTabla;
 
-    private static final String[] ROLES = {"Rol asignado ▾", "Mesero", "Cocina", "Cajero", "Administrador"};
-
-    // Anchos de columna de la tabla (suman 1.0)
+    private static final String[] ROLES = {"Rol asignado", "Mesero", "Cocinero", "Cajero", "Admin"};
     private static final double[] PW = {0.34, 0.28, 0.18, 0.20};
     private static final String[] COLS = {"Nombre", "UserName", "Rol", "Acciones"};
 
-    // ─── CONSTRUCTOR ────────────────────────────────
+    // ─── CONSTRUCTOR ───
     public PanelEmpleados() {
         setLayout(new BorderLayout());
         setBackground(C_BG);
-        inicializarDummy();
 
         JPanel contenido = buildContenido();
         JScrollPane scroll = new JScrollPane(contenido,
@@ -70,6 +67,106 @@ public class PanelEmpleados extends JPanel {
         scroll.getViewport().setBackground(C_BG);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         add(scroll, BorderLayout.CENTER);
+
+        cargarEmpleadosDesdeBackend();
+    }
+
+    // ═══════════════════════════════════════════════
+    // CONEXIÓN BACKEND (SWINGWORKER)
+    // ═══════════════════════════════════════════════
+    private void cargarEmpleadosDesdeBackend() {
+        SwingWorker<String, Void> worker = new SwingWorker<>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                return apiClient.obtenerEmpleados();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String json = get();
+                    parsearYActualizarEmpleados(json);
+                } catch (Exception e) {
+                    System.err.println("Error al obtener empleados de Laravel: " + e.getMessage());
+                    inicializarDummy();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void parsearYActualizarEmpleados(String json) {
+        empleados.clear();
+        if (json != null && !json.trim().isEmpty()) {
+            try {
+                org.json.JSONArray array = new org.json.JSONArray(json);
+                for (int i = 0; i < array.length(); i++) {
+                    org.json.JSONObject obj = array.getJSONObject(i);
+
+                    int id = obj.optInt("id", 0);
+                    String nombre = obj.optString("name", obj.optString("nombre", "Sin Nombre"));
+                    String username = obj.optString("username", "usuario");
+                    String rolRaw = obj.optString("role", obj.optString("rol", "mesero"));
+
+                    empleados.add(new Empleado(id, nombre, username, normalizarRol(rolRaw)));
+                }
+            } catch (Exception e) {
+                System.err.println("Error procesando JSON de empleados: " + e.getMessage());
+            }
+        }
+
+        if (empleados.isEmpty()) {
+            inicializarDummy();
+        } else {
+            poblarTabla();
+        }
+    }
+
+    /**
+     * Mapea los valores en minúscula de Laravel a las etiquetas formateadas de Java
+     */
+    private String normalizarRol(String rol) {
+        if (rol == null || rol.trim().isEmpty()) return "Mesero";
+        String r = rol.toLowerCase().trim();
+
+        if (r.contains("admin"))  return "Admin";
+        if (r.contains("coci"))   return "Cocinero";
+        if (r.contains("caj"))    return "Cajero";
+        return "Mesero";
+    }
+
+    /**
+     * Convierte los valores de Java al formato exigido por la API de Laravel
+     */
+    private String denormalizarRol(String rol) {
+        if (rol == null) return "mesero";
+        switch (rol) {
+            case "Admin":    return "admin";
+            case "Cocinero": return "cocinero";
+            case "Cajero":   return "cajero";
+            default:         return "mesero";
+        }
+    }
+
+    private String extraerJson(String item, String key, String def) {
+        try {
+            String search = "\"" + key + "\":";
+            int start = item.indexOf(search);
+            if (start == -1) return def;
+            start += search.length();
+            if (item.charAt(start) == '"') {
+                start++;
+                int end = item.indexOf("\"", start);
+                return item.substring(start, end);
+            } else {
+                int end = item.indexOf(",", start);
+                if (end == -1) end = item.indexOf("}", start);
+                if (end == -1) end = item.length();
+                return item.substring(start, end).trim();
+            }
+        } catch (Exception e) {
+            return def;
+        }
     }
 
     // ═══════════════════════════════════════════════
@@ -87,15 +184,12 @@ public class PanelEmpleados extends JPanel {
         gc.anchor  = GridBagConstraints.NORTH;
         gc.gridx   = 0;
 
-        // 1. Título "Empleados"
         gc.gridy = 0; gc.insets = new Insets(0, 0, 20, 0);
         p.add(buildTituloPrincipal(), gc);
 
-        // 2. Subtítulo "Registrar nuevo empleado" + referencia RF-03 / RNF-08
         gc.gridy = 1; gc.insets = new Insets(0, 0, 14, 0);
-        p.add(buildSubtituloConReferencia("Registrar nuevo empleado", "RF-03 / RNF-08"), gc);
+        p.add(buildSubtituloConReferencia("Registrar nuevo empleado"), gc);
 
-        // 3. Fila 1 del formulario: Nombre completo / UserName
         JPanel f1 = new JPanel(new GridLayout(1, 2, 16, 0));
         f1.setOpaque(false);
         txtNombre   = new JTextField();
@@ -105,7 +199,6 @@ public class PanelEmpleados extends JPanel {
         gc.gridy = 2; gc.insets = new Insets(0, 0, 12, 0);
         p.add(f1, gc);
 
-        // 4. Fila 2 del formulario: Rol / Contraseña / Confirmar contraseña
         JPanel f2 = new JPanel(new GridLayout(1, 3, 16, 0));
         f2.setOpaque(false);
         cmbRol = mkCombo(ROLES);
@@ -117,7 +210,6 @@ public class PanelEmpleados extends JPanel {
         gc.gridy = 3; gc.insets = new Insets(0, 0, 18, 0);
         p.add(f2, gc);
 
-        // 5. Botón "+ Registrar empleado" (alineado a la derecha)
         JPanel filaBoton = new JPanel(new BorderLayout());
         filaBoton.setOpaque(false);
         JButton btnRegistrar = buildBoton("+ Registrar empleado");
@@ -129,11 +221,9 @@ public class PanelEmpleados extends JPanel {
         gc.gridy = 4; gc.insets = new Insets(0, 0, 28, 0);
         p.add(filaBoton, gc);
 
-        // 6. Subtítulo "Empleados registrados"
         gc.gridy = 5; gc.insets = new Insets(0, 0, 12, 0);
         p.add(mkSubtitulo("Empleados registrados"), gc);
 
-        // 7. Tabla (encabezado + filas en una sola cuadrícula)
         panelTabla = new JPanel();
         panelTabla.setOpaque(false);
         gc.gridy = 6; gc.insets = new Insets(0, 0, 0, 0);
@@ -146,7 +236,6 @@ public class PanelEmpleados extends JPanel {
         return p;
     }
 
-    // ─── TÍTULO Y SUBTÍTULOS ────────────────────────
     private JPanel buildTituloPrincipal() {
         JLabel lbl = new JLabel("Empleados");
         lbl.setFont(new Font("Arial", Font.BOLD, 30));
@@ -170,12 +259,12 @@ public class PanelEmpleados extends JPanel {
         return l;
     }
 
-    private JPanel buildSubtituloConReferencia(String texto, String referencia) {
+    private JPanel buildSubtituloConReferencia(String texto) {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.add(mkSubtitulo(texto), BorderLayout.WEST);
 
-        JLabel lblRef = new JLabel(referencia);
+        JLabel lblRef = new JLabel("* Campos obligatorios");
         lblRef.setFont(new Font("Arial", Font.PLAIN, 12));
         lblRef.setForeground(new Color(0x999999));
         p.add(lblRef, BorderLayout.EAST);
@@ -183,7 +272,7 @@ public class PanelEmpleados extends JPanel {
     }
 
     // ═══════════════════════════════════════════════
-    // TABLA (encabezado + filas, misma cuadrícula)
+    // TABLA Y RENDERS
     // ═══════════════════════════════════════════════
     private void poblarTabla() {
         panelTabla.removeAll();
@@ -193,7 +282,6 @@ public class PanelEmpleados extends JPanel {
         g.fill = GridBagConstraints.BOTH;
         g.weighty = 0;
 
-        // ── Encabezado ──
         g.gridy = 0;
         for (int i = 0; i < COLS.length; i++) {
             g.gridx = i; g.weightx = PW[i];
@@ -211,7 +299,6 @@ public class PanelEmpleados extends JPanel {
             panelTabla.add(cellHeader, g);
         }
 
-        // ── Filas ──
         int gy = 1;
         for (int i = 0; i < empleados.size(); i++) {
             Empleado e = empleados.get(i);
@@ -222,10 +309,10 @@ public class PanelEmpleados extends JPanel {
             panelTabla.add(buildCellWrapper(buildCeldaNombre(e), rowBg), g);
 
             g.gridx = 1; g.weightx = PW[1];
-            panelTabla.add(buildCellWrapper(mkLbl(e.username, new Color(0x666666)), rowBg), g);
+            panelTabla.add(buildCellWrapper(mkLbl("@" + e.getUsername(), new Color(0x666666)), rowBg), g);
 
             g.gridx = 2; g.weightx = PW[2];
-            panelTabla.add(buildCellWrapper(buildBadgeRol(e.rol), rowBg), g);
+            panelTabla.add(buildCellWrapper(buildBadgeRol(e.getRol()), rowBg), g);
 
             g.gridx = 3; g.weightx = PW[3];
             panelTabla.add(buildCellWrapper(buildAcciones(e), rowBg), g);
@@ -233,10 +320,6 @@ public class PanelEmpleados extends JPanel {
             gy++;
 
             g.gridy = gy; g.gridx = 0; g.gridwidth = 4; g.weightx = 1.0;
-            // El ÚLTIMO separador recibe weighty=1.0 y anchor NORTH: así el
-            // espacio sobrante de panelTabla se va DEBAJO de la tabla y no
-            // centra todo el bloque (el mismo bug que ya corregimos afuera,
-            // pero esta vez ocurría DENTRO del GridBagLayout de la tabla).
             boolean esUltimaFila = (i == empleados.size() - 1);
             if (esUltimaFila) {
                 g.weighty = 1.0;
@@ -266,15 +349,14 @@ public class PanelEmpleados extends JPanel {
         return p;
     }
 
-    /** Celda "Nombre": avatar circular con iniciales + nombre completo */
     private JPanel buildCeldaNombre(Empleado e) {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         p.setOpaque(false);
 
-        Color[] colores = coloresRol(e.rol);
-        JComponent avatar = buildAvatar(iniciales(e.nombre), colores[0], colores[1]);
+        Color[] colores = coloresRol(e.getRol());
+        JComponent avatar = buildAvatar(iniciales(e.getNombre()), colores[0], colores[1]);
 
-        JLabel lblNombre = mkLbl(e.nombre, new Color(0x333333));
+        JLabel lblNombre = mkLbl(e.getNombre(), new Color(0x333333));
         lblNombre.setFont(new Font("Arial", Font.BOLD, 13));
 
         p.add(avatar);
@@ -302,28 +384,27 @@ public class PanelEmpleados extends JPanel {
         return avatar;
     }
 
-    /** Nombre del rol como texto plano, coloreado según el tipo (sin relleno/píldora) */
     private JComponent buildBadgeRol(String rol) {
         Color[] colores = coloresRol(rol);
-        Color fg = colores[1];
-
         JLabel lbl = new JLabel(rol);
         lbl.setFont(new Font("Arial", Font.BOLD, 13));
-        lbl.setForeground(fg);
+        lbl.setForeground(colores[1]);
         return lbl;
     }
 
     private Color[] coloresRol(String rol) {
+        if (rol == null) return new Color[]{new Color(0xEDEDED), new Color(0x666666)};
         switch (rol) {
-            case "Mesero":        return new Color[]{ROL_MESERO_BG, ROL_MESERO_T};
-            case "Cocina":         return new Color[]{ROL_COCINA_BG, ROL_COCINA_T};
-            case "Cajero":         return new Color[]{ROL_CAJERO_BG, ROL_CAJERO_T};
-            case "Administrador":  return new Color[]{ROL_ADMIN_BG, ROL_ADMIN_T};
-            default:               return new Color[]{new Color(0xEDEDED), new Color(0x666666)};
+            case "Mesero":   return new Color[]{ROL_MESERO_BG, ROL_MESERO_T};
+            case "Cocinero": return new Color[]{ROL_COCINA_BG, ROL_COCINA_T};
+            case "Cajero":   return new Color[]{ROL_CAJERO_BG, ROL_CAJERO_T};
+            case "Admin":    return new Color[]{ROL_ADMIN_BG, ROL_ADMIN_T};
+            default:         return new Color[]{new Color(0xEDEDED), new Color(0x666666)};
         }
     }
 
     private String iniciales(String nombreCompleto) {
+        if (nombreCompleto == null || nombreCompleto.isEmpty()) return "?";
         String[] partes = nombreCompleto.trim().split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < partes.length && sb.length() < 2; i++) {
@@ -332,7 +413,6 @@ public class PanelEmpleados extends JPanel {
         return sb.toString();
     }
 
-    /** Editar | Eliminar como texto clickeable, igual que en las demás tablas */
     private JPanel buildAcciones(Empleado item) {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         p.setOpaque(false);
@@ -369,70 +449,72 @@ public class PanelEmpleados extends JPanel {
     }
 
     // ═══════════════════════════════════════════════
-    // LÓGICA DE EVENTOS
+    // EVENTOS Y REGISTRO EN LARAVEL
     // ═══════════════════════════════════════════════
     private void onRegistrarEmpleado() {
         String nombre = txtNombre.getText().trim();
         String username = txtUsername.getText().trim();
-        String rol = (String) cmbRol.getSelectedItem();
+        String rolSeleccionado = (String) cmbRol.getSelectedItem();
         String pass = new String(txtPassword.getPassword()).trim();
         String confirmPass = new String(txtConfirmPassword.getPassword()).trim();
 
-        // ── Validar nombre ──
         if (nombre.isEmpty() || nombre.equals("Nombre completo")) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo registrar: debes ingresar el nombre completo del empleado.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No se pudo registrar: debes ingresar el nombre completo del empleado.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar username vacío ──
         if (username.isEmpty() || username.equals("UserName")) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo registrar: debes ingresar un UserName.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No se pudo registrar: debes ingresar un UserName.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar rol ──
-        if (rol == null || rol.equals(ROLES[0])) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo registrar: selecciona el rol asignado.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+        if (rolSeleccionado == null || rolSeleccionado.equals(ROLES[0])) {
+            JOptionPane.showMessageDialog(this, "No se pudo registrar: selecciona el rol asignado.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar contraseña vacía ──
         if (pass.isEmpty() || pass.equals("Contraseña de acceso")) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo registrar: ingresa una contraseña de acceso.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No se pudo registrar: ingresa una contraseña de acceso.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar que las contraseñas coincidan ──
         if (!pass.equals(confirmPass)) {
-            JOptionPane.showMessageDialog(this,
-                    "Las contraseñas no coinciden.",
-                    "Error de validación", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Las contraseñas no coinciden.", "Error de validación", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // ── Validar que el UserName no esté ya en uso ──
         if (existeUsername(username, null)) {
-            JOptionPane.showMessageDialog(this,
-                    "El UserName \"" + username + "\" ya está en uso. Elige otro.",
-                    "UserName duplicado", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El UserName \"" + username + "\" ya está en uso. Elige otro.", "UserName duplicado", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        empleados.add(new Empleado(String.format("#E%03d", empleados.size() + 1), nombre, username, rol));
-        poblarTabla();
-        limpiarFormulario();
+        // Convertimos el rol a minúsculas para Laravel (ej: "mesero", "cocinero")
+        String rolApi = denormalizarRol(rolSeleccionado);
+        Empleado nuevoEmpleado = new Empleado(nombre, username, rolApi, pass);
 
-        JOptionPane.showMessageDialog(this,
-                "Empleado \"" + nombre + "\" registrado correctamente.",
-                "Empleado registrado", JOptionPane.INFORMATION_MESSAGE);
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                apiClient.crearEmpleado(nuevoEmpleado);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // Lanza cualquier excepción ocurrida en doInBackground
+                    cargarEmpleadosDesdeBackend();
+                    limpiarFormulario();
+                    JOptionPane.showMessageDialog(PanelEmpleados.this,
+                            "Empleado \"" + nombre + "\" registrado correctamente.",
+                            "Empleado registrado", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(PanelEmpleados.this,
+                            "Error al registrar en el servidor:\n" + ex.getCause().getMessage(),
+                            "Error de API", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private void onEditarEmpleado(Empleado item) {
@@ -455,18 +537,18 @@ public class PanelEmpleados extends JPanel {
         g.gridy = 0; p.add(lblTitulo, g);
 
         g.gridy++; p.add(mkLabelForm("Nombre completo:"), g);
-        JTextField txtEditNom = new JTextField(item.nombre);
+        JTextField txtEditNom = new JTextField(item.getNombre());
         styleCampoDialog(txtEditNom);
         g.gridy++; p.add(txtEditNom, g);
 
         g.gridy++; p.add(mkLabelForm("UserName:"), g);
-        JTextField txtEditUser = new JTextField(item.username);
+        JTextField txtEditUser = new JTextField(item.getUsername());
         styleCampoDialog(txtEditUser);
         g.gridy++; p.add(txtEditUser, g);
 
         g.gridy++; p.add(mkLabelForm("Rol asignado:"), g);
-        JComboBox<String> cmbEditRol = new JComboBox<>(new String[]{"Mesero", "Cocina", "Cajero", "Administrador"});
-        cmbEditRol.setSelectedItem(item.rol);
+        JComboBox<String> cmbEditRol = new JComboBox<>(new String[]{"Mesero", "Cocinero", "Cajero", "Admin"});
+        cmbEditRol.setSelectedItem(item.getRol());
         cmbEditRol.setFont(new Font("Arial", Font.PLAIN, 14));
         cmbEditRol.setBackground(C_CAMPO_BG);
         g.gridy++; p.add(cmbEditRol, g);
@@ -474,10 +556,8 @@ public class PanelEmpleados extends JPanel {
         JPanel panelBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelBtns.setOpaque(false);
 
-        JButton btnCancelar = new JButton("Cancelar");
-        btnCancelar.setFont(new Font("Arial", Font.BOLD, 12));
-        btnCancelar.setContentAreaFilled(false);
-        btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton btnCancelar = buildBoton("Cancelar");
+        btnCancelar.setPreferredSize(new Dimension(110, 38));
         btnCancelar.addActionListener(e -> dialog.dispose());
 
         JButton btnGuardar = buildBoton("Guardar Cambios");
@@ -485,40 +565,43 @@ public class PanelEmpleados extends JPanel {
         btnGuardar.addActionListener(e -> {
             String nom = txtEditNom.getText().trim();
             String user = txtEditUser.getText().trim();
+            String rolUi = (String) cmbEditRol.getSelectedItem();
 
-            // ── Validar nombre ──
             if (nom.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: el nombre completo no puede estar vacío.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "No se pudo guardar: el nombre completo no puede estar vacío.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // ── Validar username vacío ──
             if (user.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: el UserName no puede estar vacío.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "No se pudo guardar: el UserName no puede estar vacío.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // ── Validar que el UserName no choque con otro empleado ──
             if (existeUsername(user, item)) {
-                JOptionPane.showMessageDialog(dialog,
-                        "El UserName \"" + user + "\" ya lo usa otro empleado. Elige otro.",
-                        "UserName duplicado", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "El UserName \"" + user + "\" ya lo usa otro empleado. Elige otro.", "UserName duplicado", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            item.nombre = nom;
-            item.username = user;
-            item.rol = (String) cmbEditRol.getSelectedItem();
-            poblarTabla();
-            dialog.dispose();
+            item.setNombre(nom);
+            item.setUsername(user);
+            item.setRol(denormalizarRol(rolUi)); // Guardamos en minúsculas para enviar a la API
 
-            JOptionPane.showMessageDialog(this,
-                    "Empleado \"" + nom + "\" actualizado correctamente.",
-                    "Cambios guardados", JOptionPane.INFORMATION_MESSAGE);
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    if (item.getId() != null) {
+                        apiClient.actualizarEmpleado(item);
+                    }
+                    return null;
+                }
+
+                @Override protected void done() {
+                    cargarEmpleadosDesdeBackend();
+                    dialog.dispose();
+                    JOptionPane.showMessageDialog(PanelEmpleados.this,
+                            "Empleado \"" + nom + "\" actualizado correctamente.",
+                            "Cambios guardados", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }.execute();
         });
 
         panelBtns.add(btnCancelar);
@@ -536,24 +619,29 @@ public class PanelEmpleados extends JPanel {
 
     private void onEliminarEmpleado(Empleado item) {
         int ok = JOptionPane.showConfirmDialog(this,
-                "¿Eliminar al empleado \"" + item.nombre + "\"?", "Confirmar",
+                "¿Eliminar al empleado \"" + item.getNombre() + "\"?", "Confirmar",
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
         if (ok == JOptionPane.YES_OPTION) {
-            empleados.remove(item);
-            poblarTabla();
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    if (item.getId() != null) {
+                        apiClient.eliminarEmpleado(item.getId());
+                    }
+                    return null;
+                }
+
+                @Override protected void done() {
+                    cargarEmpleadosDesdeBackend();
+                }
+            }.execute();
         }
     }
 
-    /**
-     * Verifica si un username ya está en uso por otro empleado.
-     * @param username    el username a verificar (comparación case-insensitive)
-     * @param excluir     empleado a ignorar en la búsqueda (para permitir
-     *                    guardar sin cambios al editar); usar null al registrar
-     */
     private boolean existeUsername(String username, Empleado excluir) {
         for (Empleado e : empleados) {
             if (e == excluir) continue;
-            if (e.username.equalsIgnoreCase(username)) return true;
+            if (e.getUsername() != null && e.getUsername().equalsIgnoreCase(username)) return true;
         }
         return false;
     }
@@ -567,7 +655,7 @@ public class PanelEmpleados extends JPanel {
     }
 
     // ═══════════════════════════════════════════════
-    // UTILIDADES DE DISEÑO (mismo lenguaje visual que Combos/Inventario)
+    // UTILIDADES DE DISEÑO
     // ═══════════════════════════════════════════════
     private JPanel buildCampo(JTextField field, String placeholder) {
         field.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -595,7 +683,6 @@ public class PanelEmpleados extends JPanel {
         return wrapCampo(field);
     }
 
-    /** Campo de contraseña con placeholder visible en texto plano hasta que se enfoca */
     private JPanel buildCampoPassword(JPasswordField field, String placeholder) {
         field.setFont(new Font("Arial", Font.PLAIN, 14));
         field.setOpaque(false);
@@ -697,6 +784,41 @@ public class PanelEmpleados extends JPanel {
         return btn;
     }
 
+    private JButton buildBotonSecundario(String texto) {
+        JButton btn = new JButton(texto) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Fondo beige suave
+                g2.setColor(C_CAMPO_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+
+                // Borde sutil
+                g2.setColor(C_CAMPO_BOR);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 10, 10);
+
+                // Texto en tono café
+                g2.setColor(C_ACCENT);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(getText(),
+                        (getWidth() - fm.stringWidth(getText())) / 2,
+                        (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+            }
+        };
+        btn.setFont(new Font("Arial", Font.BOLD, 13));
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setPreferredSize(new Dimension(110, 38));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
     private JLabel mkLabelForm(String text) {
         JLabel l = new JLabel(text);
         l.setFont(new Font("Arial", Font.BOLD, 12));
@@ -712,12 +834,13 @@ public class PanelEmpleados extends JPanel {
                 BorderFactory.createEmptyBorder(6, 8, 6, 8)));
     }
 
-    // ─── DATOS INICIALES DUMMY ──────────────────────
+    // ─── DATOS FALLBACK (DUMMY) ───
     private void inicializarDummy() {
-        empleados.add(new Empleado("#E001", "Juan López",     "juan",   "Mesero"));
-        empleados.add(new Empleado("#E002", "Ana Ríos",       "ana",    "Cocina"));
-        empleados.add(new Empleado("#E003", "Pedro González", "pedro",  "Cajero"));
-        empleados.add(new Empleado("#E004", "Rosa Torres",    "rosa",   "Mesero"));
-        empleados.add(new Empleado("#E005", "Carlos García",  "carlos", "Cocina"));
+        empleados.add(new Empleado(1, "Juan López",     "juan",   "Mesero"));
+        empleados.add(new Empleado(2, "Ana Ríos",       "ana",    "Cocinero"));
+        empleados.add(new Empleado(3, "Pedro González", "pedro",  "Cajero"));
+        empleados.add(new Empleado(4, "Rosa Torres",    "rosa",   "Mesero"));
+        empleados.add(new Empleado(5, "Carlos García",  "carlos", "Cocinero"));
+        poblarTabla();
     }
 }

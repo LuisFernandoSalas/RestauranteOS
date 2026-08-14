@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+
 use App\Models\User;
 use App\Notifications\StockBajoNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,10 +14,12 @@ class Insumo extends Model
 
     protected $fillable = [
         'nombre',
-        'categoría',
+        'categoria',       // Corregido: Sin tilde para coincidir con la DB y la API
         'stock_actual',
         'stock_minimo',
-        'unidad_medida', // kg, gr, pzas, lt
+        'stock_maximo',     // Agregado: Necesario para guardar el límite máximo
+        'costo_unitario',   // Agregado: Para el cálculo de recetas/platillos
+        'unidad_medida',    // kg, gr, pzas, lt
     ];
 
     /**
@@ -52,7 +55,6 @@ class Insumo extends Model
     public function notificarStockBajo(): void
     {
         // 📌 Filtra los usuarios a notificar.
-        // Si tienes una columna 'role' en User, puedes filtrar por ej: User::whereIn('role', ['admin', 'encargado'])->get();
         $usuariosANotificar = User::all();
 
         foreach ($usuariosANotificar as $user) {

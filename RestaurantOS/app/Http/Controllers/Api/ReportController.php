@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    /**
+   /**
      * GET /api/dashboard/reportes
      * Sincroniza las maquetas de gráficas y tablas con los datos reales del ecosistema.
      */
@@ -28,8 +28,9 @@ class ReportController extends Controller
         // 1. Resumen
         $totalVentasHoy = Pago::whereDate('created_at', $hoy)->sum('monto_recibido');
         $pedidosActivos = Pedido::whereIn('estado', ['pendiente', 'en_proceso', 'listo'])->count();
-        $mesasOcupadas = Mesa::where('estado', 'ocupada')->count();
-        $alertasStock = Insumo::whereColumn('stock_actual', '<=', 'stock_minimo')->count();
+        $ordenesHoy     = Pedido::whereDate('created_at', $hoy)->count(); // Total de órdenes creadas hoy
+        $mesasOcupadas  = Mesa::where('estado', 'ocupada')->count();
+        $alertasStock   = Insumo::whereColumn('stock_actual', '<=', 'stock_minimo')->count();
 
         // 2. Datos diarios (Compatible con SQLite y MySQL)
         $pagosSemana = Pago::where('created_at', '>=', $inicioSemana)->get();
@@ -68,52 +69,44 @@ class ReportController extends Controller
             ->take(5)
             ->get();
 
+        // 6. Resumen de Transacciones (Últimos pagos realizados)
+        $transacciones = Pago::with(['pedido.detalles', 'pedido.factura'])
+            ->latest()
+            ->take(10) // Muestra las últimas 10 transacciones
+            ->get()
+            ->map(function ($pago) {
+                // Cantidad total de productos en este pedido
+                $cantProductos = $pago->pedido ? $pago->pedido->detalles->sum('cantidad') : 0;
+
+                // Verifica si existe un registro en la tabla 'facturas' para este pedido
+                $tieneCfdi = $pago->pedido && $pago->pedido->factura !== null;
+
+                return [
+                    'id'      => '#' . str_pad($pago->id, 4, '0', STR_PAD_LEFT),
+                    'hora'    => $pago->created_at->format('H:i'),
+                    'detalle' => $cantProductos . ($cantProductos === 1 ? ' producto' : ' productos'),
+                    'metodo'  => ucfirst($pago->metodo_pago),
+                    'monto'   => (float) $pago->monto_recibido,
+                    'cfdi'    => $tieneCfdi, // Booleano: true (muestra palomita) / false (vacio)
+                ];
+            });
+
         return response()->json([
             'status' => 'success',
             'resumen' => [
-                'ventas_hoy' => (float) $totalVentasHoy,
+                'ventas_hoy'      => (float) $totalVentasHoy,
                 'pedidos_activos' => $pedidosActivos,
-                'mesas_ocupadas' => $mesasOcupadas,
-                'alertas_stock' => $alertasStock,
+                'ordenes_hoy'     => $ordenesHoy,
+                'mesas_ocupadas'  => $mesasOcupadas,
+                'alertas_stock'   => $alertasStock,
             ],
-            'datos_diarios' => $datosDiarios,
-            'metodos_pago' => $metodosPago,
-            'top_productos' => $topProductos,
+            'datos_diarios'      => $datosDiarios,
+            'metodos_pago'       => $metodosPago,
+            'top_productos'      => $topProductos,
             'inventario_critico' => $inventarioCritico,
-            'auditoria' => []
+            'transacciones'      => $transacciones, // <-- Clave agregada
+            'auditoria'          => []
         ]);
-    }
-
-    /**
-     * GET /api/reportes/ventas?fecha_inicio=X&fecha_fin=Y
-     * Total de ingresos recaudados en un periodo determinado.
-     */
-    public function ventas(Request $request): JsonResponse
-    {
-        $request->validate([
-            'fecha_inicio' => 'required|date',
-            'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
-        ]);
-
-        $fechaInicio = $request->fecha_inicio . ' 00:00:00';
-        $fechaFin    = $request->fecha_fin . ' 23:59:59';
-
-        $totalIngresos  = (float) Pago::whereBetween('created_at', [$fechaInicio, $fechaFin])->sum('monto_recibido');
-        $totalPropinas  = (float) Pago::whereBetween('created_at', [$fechaInicio, $fechaFin])->sum('propina');
-        $totalComandas  = Pedido::where('estado', 'pagado')->whereBetween('created_at', [$fechaInicio, $fechaFin])->count();
-        $promedioComanda = $totalComandas > 0 ? round($totalIngresos / $totalComandas, 2) : 0;
-
-        return response()->json([
-            'status' => 'success',
-            'data'   => [
-                'fecha_inicio'     => $request->fecha_inicio,
-                'fecha_fin'        => $request->fecha_fin,
-                'total_ingresos'   => $totalIngresos,
-                'total_propinas'   => $totalPropinas,
-                'total_comandas'   => $totalComandas,
-                'promedio_comanda' => $promedioComanda,
-            ]
-        ], 200);
     }
 
     /**

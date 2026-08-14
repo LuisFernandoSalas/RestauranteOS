@@ -40,22 +40,29 @@ class InsumoController extends Controller
     /**
      * Registrar un nuevo insumo
      */
+    /**
+     * REGISTRAR NUEVO INSUMO
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'        => 'required|string|max:150',
-            'categoria'     => 'nullable|string|max:100', // Ej: Verdura, Lácteo, Carne
-            'unidad_medida' => 'required|string|max:20',  // kg, g, pza, lt
-            'stock_actual'  => 'required|numeric|min:0',
-            'stock_minimo'  => 'nullable|numeric|min:0',
+            'nombre'         => 'required|string|max:150',
+            'categoria'      => 'nullable|string|max:100',
+            'unidad_medida'  => 'required|string|max:20',
+            'stock_actual'   => 'required|numeric|min:0',
+            'stock_minimo'   => 'nullable|numeric|min:0',
+            'stock_maximo'   => 'nullable|numeric|min:0',
+            'costo_unitario' => 'nullable|numeric|min:0',
         ]);
 
         $insumo = Insumo::create([
-            'nombre'        => $request->nombre,
-            'categoria'     => $request->categoria,
-            'unidad_medida' => $request->unidad_medida,
-            'stock_actual'  => $request->stock_actual,
-            'stock_minimo'  => $request->stock_minimo ?? 5, // Toma el default de tu migración
+            'nombre'         => $request->nombre,
+            'categoria'      => $request->categoria ?? 'General',
+            'unidad_medida'  => $request->unidad_medida,
+            'stock_actual'   => $request->stock_actual,
+            'stock_minimo'   => $request->stock_minimo ?? 5,
+            'stock_maximo'   => $request->stock_maximo ?? 100,
+            'costo_unitario' => $request->costo_unitario ?? 0,
         ]);
 
         // Registro de auditoría inicial
@@ -83,26 +90,35 @@ class InsumoController extends Controller
     }
 
     /**
-     * Actualizar insumo
+     * ACTUALIZAR INSUMO EXISTENTE (Ajustes de límites o datos)
      */
     public function update(Request $request, $id)
     {
         $insumo = Insumo::findOrFail($id);
 
         $request->validate([
-            'nombre'        => 'required|string|max:150',
-            'categoria'     => 'nullable|string|max:100',
-            'unidad_medida' => 'required|string|max:20',
-            'stock_minimo'  => 'required|numeric|min:0',
+            'nombre'         => 'sometimes|required|string|max:150',
+            'categoria'      => 'nullable|string|max:100',
+            'unidad_medida'  => 'sometimes|required|string|max:20',
+            'stock_minimo'   => 'nullable|numeric|min:0',
+            'stock_maximo'   => 'nullable|numeric|min:0',
+            'costo_unitario' => 'nullable|numeric|min:0',
         ]);
 
-        $insumo->update($request->only(['nombre', 'categoria', 'unidad_medida', 'stock_minimo']));
+        $insumo->update($request->only([
+            'nombre',
+            'categoria',
+            'unidad_medida',
+            'stock_minimo',
+            'stock_maximo',
+            'costo_unitario',
+        ]));
 
         return response()->json([
             'status'  => 'success',
             'message' => 'Insumo actualizado con éxito.',
             'data'    => $insumo
-        ], 200);
+        ]);
     }
 
     /**

@@ -1,22 +1,20 @@
 package vistas;
 
+import modelos.Insumo;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import servicios.ApiClient;
+
 import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Vista: PanelInventario — Inventario
- *
- * Estructura corregida:
- *   - Tabla completa renderizada bajo una única cuadrícula (GridBagLayout máster)
- *     para garantizar alineación perfecta entre encabezados y filas.
- */
-public class PanelInventario extends JPanel {
+public class PanelInventario extends JPanel  {
 
-    // ─── COLORES ───────────────────────────────────
+    // ─── COLORES Y CONFIGURACIÓN VISUAL ───
     private static final Color C_BG        = new Color(0xFBF5EC);
     private static final Color C_ACCENT    = new Color(0x6B2D1A);
     private static final Color C_CAMPO_BG  = new Color(0xEEE8DE);
@@ -29,53 +27,38 @@ public class PanelInventario extends JPanel {
     private static final Color C_ALT_ROW   = new Color(0xFAF4EE);
     private static final Color C_DIV_LINE  = new Color(0xC8A882);
 
-    // Indicadores de nivel de stock
     private static final Color C_STOCK_RED   = new Color(0xB83227);
-    private static final Color C_STOCK_WARN  = new Color(0xD97724);
     private static final Color C_STOCK_OK    = new Color(0x6B2D1A);
     private static final Color C_BAR_BG      = new Color(0xEAE2D5);
 
-    // ─── MODELO ────────────────────────────────────
-    static class Insumo {
-        String id, nombre, categoria, unidad;
-        double cantidad;
-        int porcentaje; // 0 a 100 para la barra visual
+    private static final String PH_NOMBRE    = "Nombre del insumo";
+    private static final String PH_CANTIDAD  = "Cantidad";
+    private static final String PH_MINIMO    = "Stock mínimo";
+    private static final String PH_MAXIMO    = "Stock máximo";
+    private static final String PH_NOTA      = "Nota o motivo del movimiento (opcional)";
 
-        Insumo(String id, String nombre, String categoria, double cantidad, String unidad, int porcentaje) {
-            this.id = id;
-            this.nombre = nombre;
-            this.categoria = categoria;
-            this.cantidad = cantidad;
-            this.unidad = unidad;
-            this.porcentaje = porcentaje;
-        }
+    private static final String[] CATEGORIAS = {
+            "Categoría ▾", "Verduras", "Frutas", "Carnes rojas", "Aves",
+            "Pescados y mariscos", "Lácteos", "Granos y cereales", "Legumbres",
+            "Panadería", "Especias y condimentos", "Salsas y aderezos",
+            "Aceites y grasas", "Bebidas", "Congelados", "Desechables", "Limpieza", "Abarrotes", "Carnes", "General"
+    };
 
-        String getStockTexto() {
-            if (cantidad == (long) cantidad) {
-                return String.format("%d %s", (long) cantidad, unidad);
-            } else {
-                return String.format("%.1f %s", cantidad, unidad);
-            }
-        }
-    }
+    // ─── MODELO Y SERVICIOS ───
+    private final ApiClient apiClient = new ApiClient();
+    private final List<Insumo> insumosList = new ArrayList<>();
 
-    // ─── DATOS DUMMY ───────────────────────────────
-    private final List<Insumo> insumos = new ArrayList<>();
-
-    // ─── COMPONENTES ───────────────────────────────
-    private JTextField txtNombre, txtCantidad, txtNota;
-    private JComboBox<String> cmbUnidad, cmbTipoMov;
+    // ─── COMPONENTES ───
+    private JTextField txtNombre, txtCantidad, txtMinimo, txtMaximo, txtNota;
+    private JComboBox<String> cmbUnidad, cmbCategoria, cmbTipoMov;
     private JPanel panelTabla;
 
-    // Configuración de columnas (Weights sumados dan 1.0)
     private static final double[] PW = {0.20, 0.15, 0.38, 0.09, 0.18};
     private static final String[] COLS = {"Insumo", "Categoría", "Stock actual", "Unidad", "Acciones"};
 
-    // ─── CONSTRUCTOR ───────────────────────────────
     public PanelInventario() {
         setLayout(new BorderLayout());
         setBackground(C_BG);
-        inicializarDummy();
 
         JPanel contenido = buildContenido();
         JScrollPane scroll = new JScrollPane(contenido,
@@ -85,97 +68,432 @@ public class PanelInventario extends JPanel {
         scroll.getViewport().setBackground(C_BG);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         add(scroll, BorderLayout.CENTER);
+
+        cargarInsumosDesdeApi();
     }
 
-    // ═══════════════════════════════════════════════
-    // CONTENIDO PRINCIPAL
-    // ═══════════════════════════════════════════════
     private JPanel buildContenido() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(C_BG);
         p.setBorder(BorderFactory.createEmptyBorder(24, 32, 32, 32));
 
         GridBagConstraints gc = new GridBagConstraints();
-        gc.fill    = GridBagConstraints.HORIZONTAL;
-        gc.weightx = 1.0;
-        gc.gridx   = 0;
-        gc.weighty = 0;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0; gc.gridx = 0; gc.weighty = 0;
 
-        // ── Título principal ──
+        // Título
         gc.gridy = 0; gc.insets = new Insets(0, 0, 20, 0);
         p.add(buildTituloPrincipal(), gc);
 
-        // ── Subtítulo "Registrar movimiento de insumo" ──
+        // Subtítulo
         gc.gridy = 1; gc.insets = new Insets(0, 0, 12, 0);
-        p.add(mkSubtitulo("Registrar movimiento de insumo"), gc);
+        p.add(mkSubtitulo("Registrar movimiento / Insumo"), gc);
 
-        // ── Fila 1 Formulario ──
+        // Formulario Fila 1 (Nombre, Categoría, Cantidad, Unidad)
         JPanel f1 = new JPanel(new GridBagLayout());
         f1.setOpaque(false);
         GridBagConstraints g1 = new GridBagConstraints();
-        g1.fill = GridBagConstraints.HORIZONTAL;
-        g1.insets = new Insets(0, 0, 0, 12);
+        g1.fill = GridBagConstraints.HORIZONTAL; g1.insets = new Insets(0, 0, 0, 12);
 
         txtNombre = new JTextField();
+        cmbCategoria = mkCombo(CATEGORIAS);
         txtCantidad = new JTextField();
-        cmbUnidad = mkCombo(new String[]{"Unidad ▾", "kg", "g", "l", "ml", "pz"});
+        cmbUnidad = mkCombo(new String[]{"Unidad ▾", "kg", "g", "l", "ml", "pz", "pza"});
 
-        g1.gridx = 0; g1.weightx = 0.50;
-        f1.add(buildCampo(txtNombre, "Nombre del insumo"), g1);
-
-        g1.gridx = 1; g1.weightx = 0.28;
-        f1.add(buildCampo(txtCantidad, "Cantidad"), g1);
-
-        g1.gridx = 2; g1.weightx = 0.22; g1.insets = new Insets(0, 0, 0, 0);
+        g1.gridx = 0; g1.weightx = 0.32; f1.add(buildCampo(txtNombre, PH_NOMBRE), g1);
+        g1.gridx = 1; g1.weightx = 0.20; f1.add(buildComboWrap(cmbCategoria), g1);
+        g1.gridx = 2; g1.weightx = 0.24; f1.add(buildCampo(txtCantidad, PH_CANTIDAD), g1);
+        g1.gridx = 3; g1.weightx = 0.24; g1.insets = new Insets(0, 0, 0, 0);
         f1.add(buildComboWrap(cmbUnidad), g1);
 
         gc.gridy = 2; gc.insets = new Insets(0, 0, 10, 0);
         p.add(f1, gc);
 
-        // ── Fila 2 Formulario ──
+        // Formulario Fila 2 (Tipo Movimiento, Stock Mínimo, Stock Máximo)
         JPanel f2 = new JPanel(new GridBagLayout());
         f2.setOpaque(false);
         GridBagConstraints g2 = new GridBagConstraints();
-        g2.fill = GridBagConstraints.HORIZONTAL;
-        g2.insets = new Insets(0, 0, 0, 12);
+        g2.fill = GridBagConstraints.HORIZONTAL; g2.insets = new Insets(0, 0, 0, 12);
 
-        cmbTipoMov = mkCombo(new String[]{"Tipo de movimiento ▾", "Entrada / Reabasto", "Salida / Consumo", "Ajuste"});
+        cmbTipoMov = mkCombo(new String[]{"Tipo de movimiento ▾", "ENTRADA", "MERMA", "AJUSTE"});
+        txtMinimo = new JTextField();
+        txtMaximo = new JTextField();
+
+        g2.gridx = 0; g2.weightx = 0.34; f2.add(buildComboWrap(cmbTipoMov), g2);
+        g2.gridx = 1; g2.weightx = 0.33; f2.add(buildCampo(txtMinimo, PH_MINIMO), g2);
+        g2.gridx = 2; g2.weightx = 0.33; g2.insets = new Insets(0, 0, 0, 0);
+        f2.add(buildCampo(txtMaximo, PH_MAXIMO), g2);
+
+        gc.gridy = 3; gc.insets = new Insets(0, 0, 10, 0);
+        p.add(f2, gc);
+
+        // Formulario Fila 3 (Nota / Motivo y Botón Guardar)
+        JPanel f3 = new JPanel(new GridBagLayout());
+        f3.setOpaque(false);
+        GridBagConstraints g3 = new GridBagConstraints();
+        g3.fill = GridBagConstraints.HORIZONTAL; g3.insets = new Insets(0, 0, 0, 12);
+
         txtNota = new JTextField();
         JButton btnGuardar = buildBoton("Guardar");
         btnGuardar.addActionListener(e -> onGuardarMovimiento());
 
-        g2.gridx = 0; g2.weightx = 0.35;
-        f2.add(buildComboWrap(cmbTipoMov), g2);
+        g3.gridx = 0; g3.weightx = 0.82; f3.add(buildCampo(txtNota, PH_NOTA), g3);
+        g3.gridx = 1; g3.weightx = 0.18; g3.insets = new Insets(0, 0, 0, 0);
+        f3.add(btnGuardar, g3);
 
-        g2.gridx = 1; g2.weightx = 0.45;
-        f2.add(buildCampo(txtNota, "Nota o motivo del movimiento (opcional)"), g2);
+        gc.gridy = 4; gc.insets = new Insets(0, 0, 28, 0);
+        p.add(f3, gc);
 
-        g2.gridx = 2; g2.weightx = 0.20; g2.insets = new Insets(0, 0, 0, 0);
-        f2.add(btnGuardar, g2);
-
-        gc.gridy = 3; gc.insets = new Insets(0, 0, 28, 0);
-        p.add(f2, gc);
-
-        // ── Subtítulo "Insumos registrados" ──
-        gc.gridy = 4; gc.insets = new Insets(0, 0, 12, 0);
+        // Sección Tabla
+        gc.gridy = 5; gc.insets = new Insets(0, 0, 12, 0);
         p.add(mkSubtitulo("Insumos registrados"), gc);
 
-        // ── Contenedor de la Tabla Unificada ──
         panelTabla = new JPanel();
         panelTabla.setOpaque(false);
-        gc.gridy = 5; gc.insets = new Insets(0, 0, 0, 0);
+        gc.gridy = 6; gc.insets = new Insets(0, 0, 0, 0);
         p.add(panelTabla, gc);
 
-        // Relleno inferior
-        gc.gridy = 6; gc.weighty = 1.0; gc.fill = GridBagConstraints.BOTH;
-        JPanel sp = new JPanel(); sp.setOpaque(false);
-        p.add(sp, gc);
-
-        poblarTabla();
         return p;
     }
 
-    // ─── TÍTULO Y SUBTÍTULO ────────────────────────
+    // ─── FUNCIONES AUXILIARES ───
+    /**
+     * Remueve acentos, convierte a minúsculas y elimina espacios extras
+     * para asegurar comparaciones precisas (ej. "Maíz" == "Maiz").
+     */
+    private String normalizarTexto(String texto) {
+        if (texto == null) return "";
+        String normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD);
+        return normalizado.replaceAll("\\p{M}", "").toLowerCase().trim();
+    }
+
+    /**
+     * Llena el formulario con los datos del insumo seleccionado de la tabla.
+     */
+    private void seleccionarInsumo(Insumo item) {
+        txtNombre.setText(item.getNombre());
+        txtNombre.setForeground(new Color(0x333333));
+
+        txtMinimo.setText(String.valueOf(item.getStockMinimo()));
+        txtMinimo.setForeground(new Color(0x333333));
+
+        txtMaximo.setText(String.valueOf(item.getStockMaximo()));
+        txtMaximo.setForeground(new Color(0x333333));
+
+        if (item.getCategoria() != null) {
+            cmbCategoria.setSelectedItem(item.getCategoria());
+        }
+
+        if (item.getUnidadMedida() != null) {
+            cmbUnidad.setSelectedItem(item.getUnidadMedida());
+        }
+
+        // Reset de campos no persistentes
+        txtCantidad.setText(PH_CANTIDAD);
+        txtCantidad.setForeground(new Color(0xAAAAAA));
+        txtNota.setText(PH_NOTA);
+        txtNota.setForeground(new Color(0xAAAAAA));
+        cmbTipoMov.setSelectedIndex(0);
+    }
+
+    /**
+     * Hace que un panel actúe como botón interactivo para seleccionar el insumo.
+     */
+    private void hacerClicable(JPanel panel, Insumo item) {
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                seleccionarInsumo(item);
+            }
+        });
+    }
+
+    // ─── LÓGICA API ───
+    private void cargarInsumosDesdeApi() {
+        new SwingWorker<List<Insumo>, Void>() {
+            @Override
+            protected List<Insumo> doInBackground() throws Exception {
+                String jsonResponse = apiClient.obtenerInsumos();
+                JSONObject response = new JSONObject(jsonResponse);
+                JSONArray data = response.getJSONArray("data");
+
+                List<Insumo> lista = new ArrayList<>();
+                for (int i = 0; i < data.length(); i++) {
+                    JSONObject obj = data.getJSONObject(i);
+                    Insumo ins = new Insumo();
+                    ins.setId(obj.getInt("id"));
+                    ins.setNombre(obj.getString("nombre"));
+                    ins.setCategoria(obj.optString("categoria", "General"));
+                    ins.setUnidadMedida(obj.getString("unidad_medida"));
+                    ins.setStockActual(obj.getDouble("stock_actual"));
+                    ins.setStockMinimo(obj.optDouble("stock_minimo", 5.0));
+                    ins.setStockMaximo(obj.optDouble("stock_maximo", 100.0));
+                    lista.add(ins);
+                }
+                return lista;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    insumosList.clear();
+                    insumosList.addAll(get());
+                    poblarTabla();
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(PanelInventario.this,
+                            e.getMessage(), "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void onGuardarMovimiento() {
+        String nom = txtNombre.getText().trim();
+        String cantStr = txtCantidad.getText().trim();
+        String minStr = txtMinimo.getText().trim();
+        String maxStr = txtMaximo.getText().trim();
+        String tipoMov = (String) cmbTipoMov.getSelectedItem();
+
+        if (nom.equals(PH_NOMBRE) || nom.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Ingresa el nombre del insumo.", "Atención", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Comparación flexible e insensible a acentos/mayúsculas
+        String nomNormalizado = normalizarTexto(nom);
+
+        Insumo existente = insumosList.stream()
+                .filter(i -> normalizarTexto(i.getNombre()).equals(nomNormalizado))
+                .findFirst().orElse(null);
+
+        if (existente == null) {
+            // REGISTRAR NUEVO INSUMO
+            double cant = (cantStr.equals(PH_CANTIDAD) || cantStr.isEmpty()) ? 0.0 : Double.parseDouble(cantStr);
+            double min  = (minStr.equals(PH_MINIMO) || minStr.isEmpty()) ? 5.0 : Double.parseDouble(minStr);
+            double max  = (maxStr.equals(PH_MAXIMO) || maxStr.isEmpty()) ? 100.0 : Double.parseDouble(maxStr);
+            String unidad = cmbUnidad.getSelectedIndex() > 0 ? (String) cmbUnidad.getSelectedItem() : "kg";
+            String cat    = cmbCategoria.getSelectedIndex() > 0 ? (String) cmbCategoria.getSelectedItem() : "General";
+
+            Insumo nuevo = new Insumo();
+            nuevo.setNombre(nom);
+            nuevo.setCategoria(cat);
+            nuevo.setUnidadMedida(unidad);
+            nuevo.setStockActual(cant);
+            nuevo.setStockMinimo(min);
+            nuevo.setStockMaximo(max);
+
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    apiClient.crearInsumo(nuevo);
+                    return null;
+                }
+                @Override protected void done() {
+                    limpiarFormulario();
+                    cargarInsumosDesdeApi();
+                }
+            }.execute();
+
+        } else {
+            // INSUMO EXISTENTE: Actualizar límites (Mín/Máx) y/o registrar movimiento
+            boolean tieneMovimiento = tipoMov != null && !tipoMov.contains("▾");
+            boolean tieneCantidad   = !cantStr.equals(PH_CANTIDAD) && !cantStr.isEmpty();
+
+            if (!minStr.equals(PH_MINIMO) && !minStr.isEmpty()) {
+                existente.setStockMinimo(Double.parseDouble(minStr));
+            }
+            if (!maxStr.equals(PH_MAXIMO) && !maxStr.isEmpty()) {
+                existente.setStockMaximo(Double.parseDouble(maxStr));
+            }
+            if (cmbCategoria.getSelectedIndex() > 0) {
+                existente.setCategoria((String) cmbCategoria.getSelectedItem());
+            }
+            if (cmbUnidad.getSelectedIndex() > 0) {
+                existente.setUnidadMedida((String) cmbUnidad.getSelectedItem());
+            }
+
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    // 1. Enviar cambios de configuración al servidor
+                    apiClient.actualizarInsumo(existente);
+
+                    // 2. Si se especificó un movimiento y cantidad, registrarlo
+                    if (tieneMovimiento && tieneCantidad) {
+                        double cant = Double.parseDouble(cantStr);
+                        String nota = txtNota.getText().equals(PH_NOTA) ? "" : txtNota.getText();
+                        apiClient.registrarMovimiento(existente.getId(), tipoMov, cant, nota);
+                    }
+                    return null;
+                }
+                @Override protected void done() {
+                    limpiarFormulario();
+                    cargarInsumosDesdeApi();
+                }
+            }.execute();
+        }
+    }
+
+    private void onEliminar(Insumo item) {
+        int ok = JOptionPane.showConfirmDialog(this,
+                "¿Eliminar \"" + item.getNombre() + "\" del inventario?",
+                "Confirmar", JOptionPane.YES_NO_OPTION);
+
+        if (ok == JOptionPane.YES_OPTION) {
+            new SwingWorker<Boolean, Void>() {
+                @Override protected Boolean doInBackground() throws Exception {
+                    return apiClient.eliminarInsumo(item.getId());
+                }
+                @Override protected void done() {
+                    cargarInsumosDesdeApi();
+                }
+            }.execute();
+        }
+    }
+
+    // ─── RENDERIZADO DE TABLA Y BARRA DE STOCK ───
+    private void poblarTabla() {
+        panelTabla.removeAll();
+        panelTabla.setLayout(new GridBagLayout());
+
+        GridBagConstraints g = new GridBagConstraints();
+        g.fill = GridBagConstraints.BOTH;
+
+        // Encabezados
+        g.gridy = 0;
+        for (int i = 0; i < COLS.length; i++) {
+            g.gridx = i; g.weightx = PW[i];
+            JPanel cellHeader = new JPanel(new BorderLayout());
+            cellHeader.setBackground(C_TBL_HDR);
+            cellHeader.setPreferredSize(new Dimension(0, 40));
+            cellHeader.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+
+            JLabel lbl = new JLabel(COLS[i]);
+            lbl.setFont(new Font("Arial", Font.BOLD, 13));
+            lbl.setForeground(C_TBL_HDR_T);
+            cellHeader.add(lbl, BorderLayout.WEST);
+            panelTabla.add(cellHeader, g);
+        }
+
+        // Filas
+        int currentGridY = 1;
+        for (int i = 0; i < insumosList.size(); i++) {
+            Insumo item = insumosList.get(i);
+            Color rowBg = (i % 2 == 0) ? C_WHITE : C_ALT_ROW;
+
+            // Fila interactiva: cada celda permite autocompletar al dar clic
+            JPanel cNombre    = buildCellWrapper(mkLbl(item.getNombre(), new Color(0x333333)), rowBg);
+            JPanel cCategoria = buildCellWrapper(mkLbl(item.getCategoria(), C_CAT_TEXT), rowBg);
+            JPanel cStock     = buildCeldaStockConBarra(item, rowBg);
+            JPanel cUnidad    = buildCellWrapper(mkLbl(item.getUnidadMedida(), new Color(0x333333)), rowBg);
+            JPanel cAcciones  = buildCellWrapper(buildAcciones(item), rowBg);
+
+            hacerClicable(cNombre, item);
+            hacerClicable(cCategoria, item);
+            hacerClicable(cStock, item);
+            hacerClicable(cUnidad, item);
+
+            g.gridy = currentGridY;
+            g.gridx = 0; g.weightx = PW[0]; panelTabla.add(cNombre, g);
+            g.gridx = 1; g.weightx = PW[1]; panelTabla.add(cCategoria, g);
+            g.gridx = 2; g.weightx = PW[2]; panelTabla.add(cStock, g);
+            g.gridx = 3; g.weightx = PW[3]; panelTabla.add(cUnidad, g);
+            g.gridx = 4; g.weightx = PW[4]; panelTabla.add(cAcciones, g);
+
+            currentGridY++;
+        }
+
+        panelTabla.revalidate();
+        panelTabla.repaint();
+    }
+
+    /**
+     * Construye el componente visual con el valor numérico y la barra de progreso
+     */
+    private JPanel buildCeldaStockConBarra(Insumo item, Color bg) {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(bg);
+        p.setPreferredSize(new Dimension(0, 48));
+        p.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+
+        double actual = item.getStockActual();
+        double min = item.getStockMinimo();
+        double max = item.getStockMaximo() > 0 ? item.getStockMaximo() : Math.max(actual, min * 2);
+
+        boolean bajo = actual <= min;
+        Color colorBarra = bajo ? C_STOCK_RED : C_STOCK_OK;
+
+        JLabel lblText = new JLabel(actual + " " + item.getUnidadMedida());
+        lblText.setFont(new Font("Arial", Font.BOLD, 13));
+        lblText.setForeground(colorBarra);
+        lblText.setPreferredSize(new Dimension(80, 20));
+
+        JPanel barra = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                int w = getWidth();
+                int h = getHeight();
+
+                g2.setColor(C_BAR_BG);
+                g2.fillRoundRect(0, (h - 8) / 2, w, 8, 8, 8);
+
+                double ratio = Math.min(1.0, Math.max(0.0, actual / max));
+                int fillWidth = (int) (w * ratio);
+
+                if (fillWidth > 0) {
+                    g2.setColor(colorBarra);
+                    g2.fillRoundRect(0, (h - 8) / 2, fillWidth, 8, 8, 8);
+                }
+            }
+        };
+        barra.setOpaque(false);
+        barra.setPreferredSize(new Dimension(140, 20));
+
+        GridBagConstraints g = new GridBagConstraints();
+        g.gridx = 0; g.weightx = 0.0; g.anchor = GridBagConstraints.WEST;
+        p.add(lblText, g);
+
+        g.gridx = 1; g.weightx = 1.0; g.fill = GridBagConstraints.HORIZONTAL; g.insets = new Insets(0, 10, 0, 0);
+        p.add(barra, g);
+
+        return p;
+    }
+
+    private JPanel buildAcciones(Insumo item) {
+        JPanel inner = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        inner.setOpaque(false);
+
+        JLabel eliminar = new JLabel("Eliminar");
+        eliminar.setFont(new Font("Arial", Font.PLAIN, 13));
+        eliminar.setForeground(new Color(0xC03020));
+        eliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        eliminar.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) { onEliminar(item); }
+        });
+
+        inner.add(eliminar);
+        return inner;
+    }
+
+    private JPanel buildCellWrapper(JComponent comp, Color bg) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(bg);
+        p.setPreferredSize(new Dimension(0, 48));
+        p.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+        p.add(comp, BorderLayout.WEST);
+        return p;
+    }
+
+    private JLabel mkLbl(String t, Color c) {
+        JLabel l = new JLabel(t);
+        l.setFont(new Font("Arial", Font.PLAIN, 13));
+        l.setForeground(c);
+        return l;
+    }
+
     private JPanel buildTituloPrincipal() {
         JLabel lbl = new JLabel("Inventario");
         lbl.setFont(new Font("Arial", Font.BOLD, 30));
@@ -183,7 +501,6 @@ public class PanelInventario extends JPanel {
 
         JSeparator sep = new JSeparator();
         sep.setForeground(C_DIV_LINE);
-        sep.setBackground(C_DIV_LINE);
 
         JPanel p = new JPanel(new BorderLayout(0, 8));
         p.setOpaque(false);
@@ -199,193 +516,6 @@ public class PanelInventario extends JPanel {
         return l;
     }
 
-    // ═══════════════════════════════════════════════
-    // RENDERIZADO UNIFICADO DE LA TABLA
-    // ═══════════════════════════════════════════════
-    private void poblarTabla() {
-        panelTabla.removeAll();
-        panelTabla.setLayout(new GridBagLayout());
-
-        GridBagConstraints g = new GridBagConstraints();
-        g.fill = GridBagConstraints.BOTH;
-        g.weighty = 0;
-
-        // ─── 1. RENDERIZAR ENCABEZADO (FILA 0) ───
-        g.gridy = 0;
-        for (int i = 0; i < COLS.length; i++) {
-            g.gridx = i;
-            g.weightx = PW[i];
-
-            JPanel cellHeader = new JPanel(new BorderLayout());
-            cellHeader.setBackground(C_TBL_HDR);
-            cellHeader.setPreferredSize(new Dimension(0, 40));
-            cellHeader.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
-
-            JLabel lbl = new JLabel(COLS[i]);
-            lbl.setFont(new Font("Arial", Font.BOLD, 13));
-            lbl.setForeground(C_TBL_HDR_T);
-            cellHeader.add(lbl, BorderLayout.WEST);
-
-            panelTabla.add(cellHeader, g);
-        }
-
-        // ─── 2. RENDERIZAR FILAS DE DATOS ───
-        int currentGridY = 1;
-        for (int i = 0; i < insumos.size(); i++) {
-            Insumo item = insumos.get(i);
-            Color rowBg = (i % 2 == 0) ? C_WHITE : C_ALT_ROW;
-
-            g.gridy = currentGridY;
-
-            // Col 0: Insumo
-            g.gridx = 0; g.weightx = PW[0];
-            panelTabla.add(buildCellWrapper(mkLbl(item.nombre, new Color(0x333333), false), rowBg), g);
-
-            // Col 1: Categoría
-            g.gridx = 1; g.weightx = PW[1];
-            panelTabla.add(buildCellWrapper(mkLbl(item.categoria, C_CAT_TEXT, false), rowBg), g);
-
-            // Col 2: Stock actual (Texto + Barra)
-            g.gridx = 2; g.weightx = PW[2];
-            panelTabla.add(buildCeldaStock(item, rowBg), g);
-
-            // Col 3: Unidad
-            g.gridx = 3; g.weightx = PW[3];
-            panelTabla.add(buildCellWrapper(mkLbl(item.unidad, new Color(0x333333), false), rowBg), g);
-
-            // Col 4: Acciones
-            g.gridx = 4; g.weightx = PW[4];
-            panelTabla.add(buildCellWrapper(buildAcciones(item), rowBg), g);
-
-            currentGridY++;
-
-            // Línea divisoria suave
-            g.gridy = currentGridY;
-            g.gridx = 0;
-            g.gridwidth = 5;
-            g.weightx = 1.0;
-
-            JSeparator sep = new JSeparator();
-            sep.setForeground(new Color(0xEEDDCC));
-            sep.setBackground(new Color(0xEEDDCC));
-            panelTabla.add(sep, g);
-
-            g.gridwidth = 1; // Restaurar ancho estándar
-            currentGridY++;
-        }
-
-        panelTabla.revalidate();
-        panelTabla.repaint();
-    }
-
-    // Wrap estándar para que cada celda tenga altura constante y margen interior perfecto
-    private JPanel buildCellWrapper(JComponent comp, Color bg) {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setBackground(bg);
-        p.setOpaque(true);
-        p.setPreferredSize(new Dimension(0, 48));
-        p.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
-        p.add(comp, BorderLayout.WEST);
-        return p;
-    }
-
-    /**
-     * Celda para la columna "Stock actual":
-     * Muestra la cantidad a la izquierda y la barra alineada perfectamente a su derecha.
-     */
-    private JPanel buildCeldaStock(Insumo item, Color bg) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(bg);
-        p.setOpaque(true);
-        p.setPreferredSize(new Dimension(0, 48));
-        p.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
-
-        Color color;
-        if (item.porcentaje <= 15) {
-            color = C_STOCK_RED;
-        } else if (item.porcentaje <= 40) {
-            color = C_STOCK_WARN;
-        } else {
-            color = C_STOCK_OK;
-        }
-
-        JLabel lblText = new JLabel(item.getStockTexto());
-        lblText.setFont(new Font("Arial", Font.BOLD, 13));
-        lblText.setForeground(color);
-        lblText.setPreferredSize(new Dimension(65, 20)); // Ancho reservado constante para el texto
-
-        JPanel bar = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                int w = getWidth();
-                int h = getHeight();
-                int fillW = Math.max(6, (int) (w * (item.porcentaje / 100.0)));
-
-                // Fondo
-                g2.setColor(C_BAR_BG);
-                g2.fillRoundRect(0, (h - 10) / 2, w, 10, 10, 10);
-
-                // Relleno de nivel
-                g2.setColor(color);
-                g2.fillRoundRect(0, (h - 10) / 2, fillW, 10, 10, 10);
-            }
-        };
-        bar.setOpaque(false);
-
-        GridBagConstraints g = new GridBagConstraints();
-        g.gridy = 0;
-
-        g.gridx = 0; g.weightx = 0.0; g.anchor = GridBagConstraints.WEST;
-        p.add(lblText, g);
-
-        g.gridx = 1; g.weightx = 1.0; g.fill = GridBagConstraints.HORIZONTAL;
-        g.insets = new Insets(0, 10, 0, 20);
-        p.add(bar, g);
-
-        return p;
-    }
-
-    /** Reabasto | Eliminar como texto clickeable */
-    private JPanel buildAcciones(Insumo item) {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        p.setOpaque(false);
-
-        JLabel reabasto = new JLabel("Reabasto");
-        reabasto.setFont(new Font("Arial", Font.PLAIN, 13));
-        reabasto.setForeground(C_ACCENT);
-        reabasto.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        reabasto.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { onReabasto(item); }
-        });
-
-        JLabel pipe = new JLabel("|");
-        pipe.setFont(new Font("Arial", Font.PLAIN, 13));
-        pipe.setForeground(new Color(0xCCCCCC));
-
-        JLabel eliminar = new JLabel("Eliminar");
-        eliminar.setFont(new Font("Arial", Font.PLAIN, 13));
-        eliminar.setForeground(new Color(0xC03020));
-        eliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        eliminar.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { onEliminar(item); }
-        });
-
-        p.add(reabasto); p.add(pipe); p.add(eliminar);
-        return p;
-    }
-
-    private JLabel mkLbl(String t, Color c, boolean bold) {
-        JLabel l = new JLabel(t);
-        l.setFont(new Font("Arial", bold ? Font.BOLD : Font.PLAIN, 13));
-        l.setForeground(c);
-        return l;
-    }
-
-    // ─── COMPONENTES ESTILIZADOS DEL FORMULARIO ───
     private JPanel buildCampo(JTextField field, String placeholder) {
         field.setFont(new Font("Arial", Font.PLAIN, 14));
         field.setOpaque(false);
@@ -393,18 +523,15 @@ public class PanelInventario extends JPanel {
         field.setForeground(new Color(0xAAAAAA));
         field.setText(placeholder);
 
-        String ph = placeholder;
         field.addFocusListener(new FocusAdapter() {
             @Override public void focusGained(FocusEvent e) {
-                if (field.getText().equals(ph)) {
-                    field.setText("");
-                    field.setForeground(new Color(0x333333));
+                if (field.getText().equals(placeholder)) {
+                    field.setText(""); field.setForeground(new Color(0x333333));
                 }
             }
             @Override public void focusLost(FocusEvent e) {
                 if (field.getText().trim().isEmpty()) {
-                    field.setText(ph);
-                    field.setForeground(new Color(0xAAAAAA));
+                    field.setText(placeholder); field.setForeground(new Color(0xAAAAAA));
                 }
             }
         });
@@ -431,25 +558,13 @@ public class PanelInventario extends JPanel {
         c.setFont(new Font("Arial", Font.PLAIN, 14));
         c.setForeground(new Color(0x666666));
         c.setBackground(C_CAMPO_BG);
-        c.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         return c;
     }
 
     private JPanel buildComboWrap(JComboBox<String> combo) {
-        JPanel wrap = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(C_CAMPO_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.setColor(C_CAMPO_BOR);
-                g2.setStroke(new BasicStroke(1.2f));
-                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 10, 10);
-            }
-        };
+        JPanel wrap = new JPanel(new BorderLayout());
         wrap.setOpaque(false);
         wrap.setPreferredSize(new Dimension(0, 48));
-        combo.setOpaque(false);
         wrap.add(combo, BorderLayout.CENTER);
         return wrap;
     }
@@ -476,110 +591,12 @@ public class PanelInventario extends JPanel {
         return btn;
     }
 
-    // ═══════════════════════════════════════════════
-    // LÓGICA DE EVENTOS INTERACTIVOS
-    // ═══════════════════════════════════════════════
-    private void onGuardarMovimiento() {
-        String nom = txtNombre.getText().trim();
-        String cantStr = txtCantidad.getText().trim();
-        String ph1 = "Nombre del insumo";
-        String ph2 = "Cantidad";
-
-        if (nom.equals(ph1) || nom.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa el nombre del insumo.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (cantStr.equals(ph2) || cantStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa la cantidad del movimiento.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        double cantidad;
-        try {
-            cantidad = Double.parseDouble(cantStr);
-            if (cantidad < 0) throw new NumberFormatException();
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Ingresa un número válido para la cantidad.", "Error de formato", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String unidad = (String) cmbUnidad.getSelectedItem();
-        if ("Unidad ▾".equals(unidad) || unidad == null) unidad = "kg";
-
-        String tipoMov = (String) cmbTipoMov.getSelectedItem();
-        boolean esConsumo = "Salida / Consumo".equals(tipoMov);
-
-        Insumo existente = null;
-        for (Insumo ins : insumos) {
-            if (ins.nombre.equalsIgnoreCase(nom)) {
-                existente = ins;
-                break;
-            }
-        }
-
-        if (existente != null) {
-            if (esConsumo) {
-                existente.cantidad = Math.max(0, existente.cantidad - cantidad);
-            } else {
-                existente.cantidad += cantidad;
-            }
-            existente.porcentaje = Math.min(100, Math.max(0, (int) (existente.cantidad * 10)));
-        } else {
-            int pct = Math.min(100, Math.max(10, (int) (cantidad * 10)));
-            Insumo nuevo = new Insumo("#" + String.format("%03d", insumos.size() + 1), nom, "General", cantidad, unidad, pct);
-            insumos.add(nuevo);
-        }
-
-        poblarTabla();
-
-        txtNombre.setText(ph1); txtNombre.setForeground(new Color(0xAAAAAA));
-        txtCantidad.setText(ph2); txtCantidad.setForeground(new Color(0xAAAAAA));
-        txtNota.setText("Nota o motivo del movimiento (opcional)"); txtNota.setForeground(new Color(0xAAAAAA));
-        cmbUnidad.setSelectedIndex(0);
-        cmbTipoMov.setSelectedIndex(0);
-    }
-
-    private void onReabasto(Insumo item) {
-        String input = JOptionPane.showInputDialog(this,
-                "Ingresa la cantidad a reabastecer de \"" + item.nombre + "\" (" + item.unidad + "):",
-                "Reabasto rápido",
-                JOptionPane.QUESTION_MESSAGE);
-
-        if (input != null && !input.trim().isEmpty()) {
-            try {
-                double cant = Double.parseDouble(input.trim());
-                if (cant > 0) {
-                    item.cantidad += cant;
-                    item.porcentaje = Math.min(100, (int) (item.porcentaje + (cant * 10)));
-                    poblarTabla();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Ingresa una cantidad mayor a cero.", "Atención", JOptionPane.WARNING_MESSAGE);
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Cantidad no válida.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private void onEliminar(Insumo item) {
-        int ok = JOptionPane.showConfirmDialog(this,
-                "¿Eliminar el insumo \"" + item.nombre + "\" del inventario?",
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (ok == JOptionPane.YES_OPTION) {
-            insumos.remove(item);
-            poblarTabla();
-        }
-    }
-
-    // ─── DATOS INICIALES DUMMY ─────────────────────
-    private void inicializarDummy() {
-        insumos.add(new Insumo("#001", "Jitomate",       "Verdura", 12.0,  "kg", 100));
-        insumos.add(new Insumo("#002", "Maíz cacahuaz.", "Grano",   0.0,   "kg", 5));
-        insumos.add(new Insumo("#003", "Pollo",          "Carne",   4.5,   "kg", 60));
-        insumos.add(new Insumo("#004", "Tortillas",      "Grano",   8.0,   "kg", 85));
-        insumos.add(new Insumo("#005", "Chile ancho",    "Verdura", 1.2,   "kg", 50));
-        insumos.add(new Insumo("#006", "dawdaw",         "General", 20.0,  "kg", 100));
+    private void limpiarFormulario() {
+        txtNombre.setText(PH_NOMBRE); txtNombre.setForeground(new Color(0xAAAAAA));
+        txtCantidad.setText(PH_CANTIDAD); txtCantidad.setForeground(new Color(0xAAAAAA));
+        txtMinimo.setText(PH_MINIMO); txtMinimo.setForeground(new Color(0xAAAAAA));
+        txtMaximo.setText(PH_MAXIMO); txtMaximo.setForeground(new Color(0xAAAAAA));
+        txtNota.setText(PH_NOTA); txtNota.setForeground(new Color(0xAAAAAA));
+        cmbCategoria.setSelectedIndex(0); cmbUnidad.setSelectedIndex(0); cmbTipoMov.setSelectedIndex(0);
     }
 }

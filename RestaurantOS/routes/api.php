@@ -19,10 +19,11 @@ use App\Http\Controllers\Api\V1\RecetaController;
 use App\Http\Controllers\Api\V1\MovimientoInventarioController;
 
 /*
---------------------------------------------------------------------------
- API Routes
---------------------------------------------------------------------------
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
 */
+
 // --- ACCESO PÚBLICO / LOGIN ---
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -51,8 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     Route::get('/menu', [MenuController::class, 'index']);
     Route::get('/mesas', [MesaController::class, 'index']);
-    Route::get('/productos', [ProductoController::class, 'index']); 
-    Route::get('/productos/{id}', [ProductoController::class, 'show']);
+    Route::apiResource('productos', ProductoController::class);
 
     // ==========================================
     //  4. COMBOS (Promociones y Paquetes)
@@ -133,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/insumos/movimiento', [InsumoController::class, 'registrarMovimiento']);
 
     // Recetas de Productos
+    Route::get('/recetas', [RecetaController::class, 'index']);
     Route::get('/recetas/producto/{productoId}', [RecetaController::class, 'show']);
     Route::post('/recetas', [RecetaController::class, 'store']);
     Route::delete('/recetas/{id}', [RecetaController::class, 'destroy']);
@@ -142,5 +143,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimientos-inventario', [MovimientoInventarioController::class, 'index']);
     Route::post('/movimientos-inventario', [MovimientoInventarioController::class, 'store']);
     Route::get('/movimientos-inventario/{id}', [MovimientoInventarioController::class, 'show']);
-
 });
