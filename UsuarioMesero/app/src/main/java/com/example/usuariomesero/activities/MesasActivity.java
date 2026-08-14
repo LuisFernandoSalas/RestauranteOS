@@ -18,7 +18,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -31,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.navigation.NavigationView;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -85,14 +88,12 @@ public class MesasActivity extends AppCompatActivity {
         setupCloseButton();
         setupDynamicUserData();
 
-        // ¡Llamamos a la API real en lugar de datos falsos!
         cargarMesasDesdeAPI();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Esto obligará a la app a consultar Laravel CADA VEZ que regrese a esta pantalla
         cargarMesasDesdeAPI();
     }
 
@@ -108,9 +109,9 @@ public class MesasActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<Mesa>> call, Response<List<Mesa>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    mesaList.clear(); // Limpiamos lista actual
-                    mesaList.addAll(response.body()); // Agregamos datos de Laravel
-                    mesaAdapter.notifyDataSetChanged(); // Refrescamos UI
+                    mesaList.clear();
+                    mesaList.addAll(response.body());
+                    mesaAdapter.notifyDataSetChanged();
                 } else if (response.code() == 401) {
                     Toast.makeText(MesasActivity.this, "Sesión caducada", Toast.LENGTH_SHORT).show();
                     cerrarSesion();
@@ -137,18 +138,64 @@ public class MesasActivity extends AppCompatActivity {
             if (mesa.getEstado() == Mesa.Estado.LIBRE) {
                 Intent intent = new Intent(MesasActivity.this, PedidoDetalleActivity.class);
                 intent.putExtra("mesa_numero", mesa.getNumero());
+                intent.putExtra("mesa_id", mesa.getNumero());
                 genericLauncher.launch(intent);
+
             } else if (mesa.getEstado() == Mesa.Estado.OCUPADA) {
-                mostrarDialogoConfirmarCobro(mesa);
+                String estadoPedido = mesa.getEstadoPedido() != null ? mesa.getEstadoPedido() : "";
+
+                if ("listo".equalsIgnoreCase(estadoPedido)) {
+                    mostrarDialogoMarcarEntregado(mesa);
+                }
+                else if ("en_preparacion".equalsIgnoreCase(estadoPedido) || "pendiente".equalsIgnoreCase(estadoPedido)) {
+                    Toast.makeText(this, "⚠️ Cocina aún está preparando el pedido. Espera a que esté listo para entregar y cobrar.", Toast.LENGTH_LONG).show();
+                }
+                else {
+                    mostrarDialogoConfirmarCobro(mesa);
+                }
+
             } else if (mesa.getEstado() == Mesa.Estado.COBRO) {
-                Intent intent = new Intent(MesasActivity.this, CobroActivity.class);
-                intent.putExtra("mesa_numero", mesa.getNumero());
-                intent.putExtra("total_pedido", mesa.getTotal());
-                genericLauncher.launch(intent);
+                Toast.makeText(MesasActivity.this, "Mesa en cobro. Funcionalidad en construcción.", Toast.LENGTH_SHORT).show();
             }
         });
         rvMesas.setLayoutManager(new GridLayoutManager(this, 3));
         rvMesas.setAdapter(mesaAdapter);
+    }
+
+    private void mostrarDialogoMarcarEntregado(Mesa mesa) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("🍽️ Pedido Listo")
+                .setMessage("El pedido de la Mesa " + mesa.getNumero() + " ya fue preparado en cocina. ¿Deseas marcarlo como ENTREGADO?")
+                .setPositiveButton("Sí, entregar", (dialog, which) -> {
+                    marcarComandaComoEntregada(mesa);
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void marcarComandaComoEntregada(Mesa mesa) {
+        String token = sesionManager.getAuthToken();
+        ApiService apiService = RetrofitClient.getClient(token).create(ApiService.class);
+
+        Map<String, String> body = new HashMap<>();
+        body.put("estado", "entregado");
+
+        apiService.actualizarEstadoPedido(mesa.getPedidoId(), body).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(MesasActivity.this, "✅ Comanda entregada a la Mesa " + mesa.getNumero(), Toast.LENGTH_SHORT).show();
+                    cargarMesasDesdeAPI();
+                } else {
+                    Toast.makeText(MesasActivity.this, "Error al actualizar estado", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(MesasActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void mostrarDialogoConfirmarCobro(Mesa mesa) {
@@ -158,17 +205,44 @@ public class MesasActivity extends AppCompatActivity {
         dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
 
         android.widget.TextView tvMsg = dialog.findViewById(R.id.tv_confirm_charge_message);
-        tvMsg.setText(String.format(java.util.Locale.getDefault(), "Se solicitará el cobro para la Mesa %d.", mesa.getNumero()));
+        tvMsg.setText(String.format(java.util.Locale.getDefault(), "Se bloqueará la Mesa %d para proceder al cobro.", mesa.getNumero()));
 
         android.widget.Button btnConfirmar = dialog.findViewById(R.id.btn_confirm_charge);
         android.widget.Button btnCancelar = dialog.findViewById(R.id.btn_cancel_charge);
 
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
         btnConfirmar.setOnClickListener(v -> {
-            mesa.setEstado(Mesa.Estado.COBRO);
-            mesaAdapter.notifyDataSetChanged();
-            Toast.makeText(this, "Estado de Mesa " + mesa.getNumero() + " actualizado a Cobro Pendiente", Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
+
+            btnConfirmar.setEnabled(false);
+
+            String token = sesionManager.getAuthToken();
+            ApiService apiService = RetrofitClient.getClient(token).create(ApiService.class);
+
+            java.util.Map<String, String> body = new java.util.HashMap<>();
+            body.put("estado", "cobro");
+
+            apiService.actualizarEstadoPedido(mesa.getPedidoId(), body).enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        mesa.setEstado(Mesa.Estado.COBRO);
+                        mesaAdapter.notifyDataSetChanged();
+                        dialog.dismiss();
+
+                        Toast.makeText(MesasActivity.this, "Mesa bloqueada para cobro.", Toast.LENGTH_SHORT).show();
+
+                    } else {
+                        btnConfirmar.setEnabled(true);
+                        Toast.makeText(MesasActivity.this, "❌ Error: Laravel rechazó el estado. Revisa las reglas de validación en el Backend.", Toast.LENGTH_LONG).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    btnConfirmar.setEnabled(true);
+                    Toast.makeText(MesasActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         dialog.show();

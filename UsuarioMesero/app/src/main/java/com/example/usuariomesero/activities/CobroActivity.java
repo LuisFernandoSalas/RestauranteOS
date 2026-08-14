@@ -2,7 +2,6 @@ package com.example.usuariomesero.activities;
 
 import com.example.usuariomesero.R;
 
-
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,8 +10,6 @@ import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -28,13 +25,12 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Pantalla de Cobro: Gestiona el proceso final de pago de una mesa.
- * Permite seleccionar el método de pago (Efectivo, Tarjeta, Mixto), 
- * calcular propinas y determinar el cambio a entregar.
+ * Pantalla de Cobro: (Cascarón visual - Lógica de API pendiente)
  */
 public class CobroActivity extends AppCompatActivity {
 
     private int mesaNumero;
+    private int pedidoId;
     private double totalPedido = 0.0;
     private double propinaMonto = 0.0;
     private double totalACobrar = 0.0;
@@ -53,10 +49,11 @@ public class CobroActivity extends AppCompatActivity {
         setContentView(R.layout.activity_cobro);
 
         mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
+        pedidoId = getIntent().getIntExtra("pedido_id", 1);
 
-        // Inicializar vistas
+        // Inicializar vistas del frontend
         initViews();
-        
+
         // Configurar valores iniciales
         updateTotals();
         selectMetodo("Efectivo");
@@ -76,18 +73,11 @@ public class CobroActivity extends AppCompatActivity {
         TextView tvMesaInfo = findViewById(R.id.tv_mesa_info_header);
 
         if (tvMesaInfo != null && mesa != null) {
-            // 1. Obtenemos el número (es int, así que lo formatearemos con %d)
             int numeroMesa = mesa.getNumero();
-
-            // 2. Obtenemos el texto informativo (ej. el nombre de quien atiende o del cliente)
             String info = (mesa.getNombreInformacion() != null && !mesa.getNombreInformacion().isEmpty())
                     ? mesa.getNombreInformacion()
                     : "Sin información";
 
-            // Opcional: Si en algún momento prefieres mostrar el estado (LIBRE, OCUPADA)...
-            String estado = (mesa.getEstado() != null) ? mesa.getEstado().name() : "DESCONOCIDO";
-
-            // 3. Imprimimos el texto final: "Mesa 1 — Hasiel"
             tvMesaInfo.setText(String.format(Locale.getDefault(), "Mesa %d — %s", numeroMesa, info));
         }
 
@@ -98,7 +88,7 @@ public class CobroActivity extends AppCompatActivity {
 
         rvDetallePedido = findViewById(R.id.rv_detalle_pedido_cobro);
         if (rvDetallePedido != null) {
-            ordenAdapter = new OrdenAdapter(itemsPedido, null); // Sin listeners porque es solo vista
+            ordenAdapter = new OrdenAdapter(itemsPedido, null);
             rvDetallePedido.setLayoutManager(new LinearLayoutManager(this));
             rvDetallePedido.setAdapter(ordenAdapter);
         }
@@ -149,66 +139,14 @@ public class CobroActivity extends AppCompatActivity {
 
         if (btnCobrarFinal != null) {
             btnCobrarFinal.setOnClickListener(v -> {
-                if ("Efectivo".equals(metodoSeleccionado)) {
-                    double recibido = getPagoRecibido();
-                    if (recibido < totalACobrar) {
-                        Toast.makeText(this, "El pago recibido es insuficiente", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                }
-                
-                mostrarDialogoConfirmarCobro();
+                Toast.makeText(this, "Funcionalidad de cobro pendiente de conectar a API", Toast.LENGTH_SHORT).show();
             });
         }
     }
 
-    private void mostrarDialogoConfirmarCobro() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Confirmar cobro");
-        builder.setMessage("¿Desea realizar el cobro para la Mesa " + mesaNumero + "?");
-        builder.setPositiveButton("Sí, cobrar", (dialog, which) -> {
-            lanzarResumen();
-        });
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
-    }
-
-    private final ActivityResultLauncher<android.content.Intent> resumenLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    // Si se aceptó el resumen, finalizamos esta actividad y notificamos éxito
-                    android.content.Intent resultIntent = new android.content.Intent();
-                    resultIntent.putExtra("mesa_numero", mesaNumero);
-                    setResult(RESULT_OK, resultIntent);
-                    finish();
-                }
-            }
-    );
-
-    private void lanzarResumen() {
-        android.content.Intent intent = new android.content.Intent(this, ResumenCobroActivity.class);
-        intent.putExtra("total", totalACobrar);
-        intent.putExtra("subtotal", totalPedido);
-        intent.putExtra("propina_monto", propinaMonto);
-        if (tvPropinaPorcentaje != null) {
-            intent.putExtra("propina_label", tvPropinaPorcentaje.getText().toString());
-        }
-        intent.putExtra("metodo", metodoSeleccionado);
-        intent.putExtra("recibido", etPagoRecibido.getText().toString());
-        
-        android.widget.CheckBox cbFactura = findViewById(R.id.cb_solicitar_factura);
-        if (cbFactura != null) {
-            intent.putExtra("factura", cbFactura.isChecked());
-        }
-
-        resumenLauncher.launch(intent);
-    }
-
     private void selectMetodo(String metodo) {
         metodoSeleccionado = metodo;
-        
-        // Reset backgrounds
+
         if (btnEfectivo != null) {
             btnEfectivo.setBackgroundResource(R.drawable.bg_button_payment_outline);
             ((TextView)btnEfectivo).setTextColor(0xFF888888);
@@ -222,7 +160,6 @@ public class CobroActivity extends AppCompatActivity {
             ((TextView)btnMixto).setTextColor(0xFF888888);
         }
 
-        // Set selected
         View selected = null;
         if (metodo.equals("Efectivo")) selected = btnEfectivo;
         else if (metodo.equals("Tarjeta")) selected = btnTarjeta;
@@ -260,29 +197,27 @@ public class CobroActivity extends AppCompatActivity {
         etMonto.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         etMonto.setHint("Ej. 12");
 
-        // Contenedor para dar padding al EditText en el diálogo
         android.widget.FrameLayout container = new android.widget.FrameLayout(this);
         int paddingPx = (int) (24 * getResources().getDisplayMetrics().density);
         container.setPadding(paddingPx, (int) (8 * getResources().getDisplayMetrics().density), paddingPx, 0);
         container.addView(etMonto);
 
         new AlertDialog.Builder(this)
-            .setTitle("Porcentaje de Propina")
-            .setMessage("Ingresa el porcentaje deseado:")
-            .setView(container)
-            .setPositiveButton("Aplicar", (d, w) -> {
-                String val = etMonto.getText().toString();
-                if (!val.isEmpty()) {
-                    try {
-                        int percent = Integer.parseInt(val);
-                        setPropina(percent, percent + "%");
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(this, "Número inválido", Toast.LENGTH_SHORT).show();
+                .setTitle("Porcentaje de Propina")
+                .setMessage("Ingresa el porcentaje deseado:")
+                .setView(container)
+                .setPositiveButton("Aplicar", (d, w) -> {
+                    String val = etMonto.getText().toString();
+                    if (!val.isEmpty()) {
+                        try {
+                            int percent = Integer.parseInt(val);
+                            setPropina(percent, percent + "%");
+                        } catch (NumberFormatException e) {
+                            Toast.makeText(this, "Número inválido", Toast.LENGTH_SHORT).show();
+                        }
                     }
-                }
-            })
-            .setNegativeButton("Cancelar", null)
-            .show();
+                })
+                .setNegativeButton("Cancelar", null).show();
     }
 
     private void setPropina(int porcentaje, String label) {
@@ -296,7 +231,7 @@ public class CobroActivity extends AppCompatActivity {
         if (tvPropinaMonto != null) {
             tvPropinaMonto.setText(String.format(Locale.getDefault(), "$%.2f", propinaMonto));
         }
-        
+
         String totalStr = String.format(Locale.getDefault(), "$%.2f", totalACobrar);
         if (tvTotalACobrarResumen != null) {
             tvTotalACobrarResumen.setText("Total a cobrar " + totalStr);
@@ -323,15 +258,6 @@ public class CobroActivity extends AppCompatActivity {
             return Double.parseDouble(s);
         } catch (NumberFormatException e) {
             return 0;
-        }
-    }
-
-    private double parsePrecio(String precio) {
-        if (precio == null || precio.isEmpty()) return 0.0;
-        try {
-            return Double.parseDouble(precio.replace("$", "").replace(" ", "").trim());
-        } catch (NumberFormatException e) {
-            return 0.0;
         }
     }
 }

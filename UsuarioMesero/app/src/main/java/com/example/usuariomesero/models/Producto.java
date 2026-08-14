@@ -13,11 +13,12 @@ public class Producto {
     @SerializedName("precio")
     private double precio;
 
-    // 👇 Mapea el objeto JSON de la categoría de Laravel
     @SerializedName("categoria")
     private CategoriaObjeto categoria;
 
-    // Clase interna para leer la estructura {"id": 2, "nombre": "..."}
+    public Producto() {
+    }
+
     public static class CategoriaObjeto {
         @SerializedName("id")
         private int id;
@@ -46,7 +47,6 @@ public class Producto {
         return precio;
     }
 
-    // Retorna el nombre directo de la categoría para que la Activity no falle
     public String getCategoria() {
         if (categoria != null && categoria.getNombre() != null) {
             return categoria.getNombre();

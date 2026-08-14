@@ -11,7 +11,7 @@ return new class extends Migration
         // 1. Estado
         if (!Schema::hasColumn('pedidos', 'estado')) {
             Schema::table('pedidos', function (Blueprint $table) {
-                $table->enum('estado', ['pendiente', 'en_preparacion', 'listo', 'entregado', 'pagado', 'cancelado'])->default('pendiente')->after('id');
+                $table->enum('estado', ['pendiente', 'en_preparacion', 'listo', 'entregado', 'pagado', 'cancelado','cobro'])->default('pendiente')->after('id');
             });
         }
 

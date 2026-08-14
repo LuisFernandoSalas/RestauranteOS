@@ -4,6 +4,7 @@ import com.example.usuariomesero.models.Mesa;
 import com.example.usuariomesero.R;
 
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,18 +75,39 @@ public class MesaAdapter extends RecyclerView.Adapter<MesaAdapter.MesaViewHolder
                 break;
 
             case OCUPADA:
-                holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
-                // 🛠️ Formateamos el número a formato moneda ($180.00)
                 double totalOcupada = mesa.getTotal() != null ? mesa.getTotal() : 0.0;
-                holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f", totalOcupada));
-                holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
+                String estadoPed = mesa.getEstadoPedido() != null ? mesa.getEstadoPedido() : "";
+
+                // 🟢 COMANDA LISTA EN COCINA: Notificación urgente
+                if ("listo".equalsIgnoreCase(estadoPed)) {
+                    holder.container.setBackgroundResource(R.drawable.bg_mesa_libre); // Verde para destacar
+                    holder.tvStatusPrice.setText("🍽️ ¡LISTO PARA SERVIR!");
+                    holder.tvStatusPrice.setTextColor(Color.parseColor("#1B5E20"));
+                }
+// 🟡 COMANDA ENTREGADA: Lista para consumo/cobro
+                else if ("entregado".equalsIgnoreCase(estadoPed)) {
+                    holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
+                    holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (Entregado)", totalOcupada));
+                    holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
+                }
+// 🔴 COBRO PENDIENTE (NUEVO CASO AGREGADO)
+                else if ("cobro".equalsIgnoreCase(estadoPed)) {
+                    holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
+                    holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (Cobro pendiente 💰)", totalOcupada));
+                    holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
+                }
+// 🟠 COMANDA EN COCINA (Resto de los estados como "en_preparacion" o nulos)
+                else {
+                    holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
+                    holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (En cocina 👨‍🍳)", totalOcupada));
+                    holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
+                }
                 break;
 
             case COBRO:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_cobro);
-                // 🛠️ Formateamos el número a formato moneda ($180.00)
                 double totalCobro = mesa.getTotal() != null ? mesa.getTotal() : 0.0;
-                holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f", totalCobro));
+                holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (Cobro)", totalCobro));
                 holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 break;
         }

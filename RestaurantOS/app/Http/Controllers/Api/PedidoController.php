@@ -211,7 +211,7 @@ class PedidoController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $pedido = Pedido::findOrFail($id);
-        $request->validate(['estado' => 'required|in:pendiente,en_preparacion,listo,entregado']);
+        $request->validate(['estado' => 'required|in:pendiente,en_preparacion,listo,entregado,cobro']);
 
         $pedido->update(['estado' => $request->estado]);
 
