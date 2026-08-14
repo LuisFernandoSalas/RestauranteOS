@@ -110,6 +110,8 @@ class PedidoController extends Controller
                 // ---------------------------------------------------------
                 foreach ($items as $item) {
                     $productoId = $item['producto_id'] ?? $item['id'] ?? null;
+                    $comboId    = $item['combo_id'] ?? null;
+
                     if ($productoId) {
                         // --- PROCESAR PRODUCTO INDIVIDUAL ---
                         $producto = Producto::findOrFail($productoId);
@@ -123,7 +125,7 @@ class PedidoController extends Controller
                         DetallePedido::create([
                             'pedido_id'       => $pedido->id,
                             'producto_id'     => $producto->id,
-                            
+                            'combo_id'        => null,
                             'cantidad'        => $item['cantidad'],
                             'precio_unitario' => $producto->precio,
                             'nota'            => $item['nota'] ?? null,
@@ -151,6 +153,7 @@ class PedidoController extends Controller
                         DetallePedido::create([
                             'pedido_id'       => $pedido->id,
                             'producto_id'     => null,
+                            'combo_id'        => $combo->id,
                             'cantidad'        => $item['cantidad'],
                             'precio_unitario' => $combo->precio_especial,
                             'nota'            => $item['nota'] ?? null,
