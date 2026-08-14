@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
@@ -12,15 +11,28 @@ use Illuminate\Support\Facades\DB;
 class RecetaController extends Controller
 {
     /**
+     * Obtener el listado global de todas las recetas registradas.
+     * GET /api/recetas
+     */
+    public function index()
+    {
+        // Carga los insumos y los productos vinculados (si existen)
+        $recetas = Receta::with(['insumo', 'producto'])->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $recetas
+        ], 200);
+    }
+
+    /**
      * Obtener la receta (lista de ingredientes) de un producto específico.
      * GET /api/recetas/producto/{productoId}
      */
     public function show($productoId)
     {
-        // Verificar que el producto exista
         $producto = Producto::findOrFail($productoId);
 
-        // Cargar los ingredientes vinculados con su información del insumo
         $receta = Receta::with('insumo')
             ->where('producto_id', $productoId)
             ->get();
@@ -33,41 +45,63 @@ class RecetaController extends Controller
     }
 
     /**
-     * Crear o reemplazar la receta completa de un producto.
+     * Crear o reemplazar una receta (con o sin producto asignado).
      * POST /api/recetas
      */
     public function store(Request $request)
     {
         $request->validate([
-            'producto_id'                    => 'required|exists:productos,id',
+            'producto_id'                    => 'nullable|integer|exists:productos,id',
+            'nombre'                         => 'required|string|max:255',
             'insumos'                        => 'required|array|min:1',
-            'insumos.*.insumo_id'             => 'required|exists:insumos,id',
+            'insumos.*.insumo_id'            => 'required|exists:insumos,id',
             'insumos.*.cantidad_por_porcion' => 'required|numeric|gt:0',
         ], [
-            'producto_id.required'                    => 'El producto es obligatorio.',
-            'insumos.required'                        => 'Debes incluir al menos un ingrediente.',
-            'insumos.*.insumo_id.exists'              => 'Uno de los insumos seleccionados no existe.',
-            'insumos.*.cantidad_por_porcion.gt'       => 'La cantidad por porción debe ser mayor a 0.',
+            'producto_id.exists'                => 'El producto seleccionado no existe en el menú.',
+            'nombre.required'                   => 'El nombre de la receta es obligatorio.',
+            'insumos.required'                  => 'Debes incluir al menos un ingrediente.',
+            'insumos.*.insumo_id.exists'        => 'Uno de los insumos seleccionados no existe.',
+            'insumos.*.cantidad_por_porcion.gt' => 'La cantidad por porción debe ser mayor a 0.',
         ]);
 
         return DB::transaction(function () use ($request) {
-            // 1. Limpiar la receta previa del producto para sincronizar
-            Receta::where('producto_id', $request->producto_id)->delete();
+            $productoId = $request->producto_id;
+            $nombre     = $request->nombre;
+
+            // 1. Manejo según si está vinculada a un Producto o es independiente
+            if ($productoId) {
+                $producto = Producto::findOrFail($productoId);
+
+                // Opcional: actualizamos el nombre del producto si fue editado desde la receta
+                if ($request->filled('nombre')) {
+                    $producto->update(['nombre' => $nombre]);
+                }
+
+                // Limpiar la receta previa de este producto
+                Receta::where('producto_id', $productoId)->delete();
+            } else {
+                // Si producto_id es NULL, limpiamos recetas anteriores sin producto que coincidan en el nombre
+                Receta::whereNull('producto_id')->where('nombre', $nombre)->delete();
+            }
 
             // 2. Registrar los nuevos insumos de la receta
-            $nuevosIngredientes = [];
             foreach ($request->insumos as $item) {
-                $nuevosIngredientes[] = Receta::create([
-                    'producto_id'          => $request->producto_id,
+                Receta::create([
+                    'producto_id'          => $productoId, // Guarda NULL o el ID del producto
+                    'nombre'               => $nombre,
                     'insumo_id'            => $item['insumo_id'],
                     'cantidad_por_porcion' => $item['cantidad_por_porcion'],
                 ]);
             }
 
-            // 3. Cargar las relaciones de insumo para la respuesta
-            $recetaCargada = Receta::with('insumo')
-                ->where('producto_id', $request->producto_id)
-                ->get();
+            // 3. Obtener la receta guardada para responder a Swing
+            $query = Receta::with(['insumo', 'producto']);
+            
+            if ($productoId) {
+                $recetaCargada = $query->where('producto_id', $productoId)->get();
+            } else {
+                $recetaCargada = $query->whereNull('producto_id')->where('nombre', $nombre)->get();
+            }
 
             return response()->json([
                 'status'  => 'success',

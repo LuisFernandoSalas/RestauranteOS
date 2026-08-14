@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('recetas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('producto_id')->constrained()->onDelete('cascade');
+            
+            // 1. Permitir que producto_id sea opcional (nullable)
+            $table->foreignId('producto_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete(); // Si se borra el producto, la receta no se elimina, solo queda desvinculada
+
+            // 2. Agregar el campo 'nombre' para identificar la receta
+            $table->string('nombre')->nullable();
+
             $table->foreignId('insumo_id')->constrained()->onDelete('cascade');
             $table->decimal('cantidad_por_porcion', 10, 3); // Ej: 0.150 kg o g
             $table->timestamps();

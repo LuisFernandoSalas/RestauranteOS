@@ -9,12 +9,22 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import servicios.ApiClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Vista: PanelReportes — Reportes semanales del Administrador
  */
-public class PanelReportes extends JPanel {
+public class PanelReportes extends JPanel implements Actualizables {
 
-    // ─── COLORES ───────────────────────────────────
+    private ApiClient apiClient;
+
+    @Override
+    public void recargarDatos() {
+        cargarDatosDesdeBackend();
+    }
+
     private static final Color C_BG      = new Color(0xFBF5EC);
     private static final Color C_ACCENT  = new Color(0x6B2D1A);
     private static final Color C_DIV     = new Color(0xC8A882);
@@ -31,7 +41,6 @@ public class PanelReportes extends JPanel {
     private static final Color C_GRID    = new Color(0xE8D8C8);
     private static final Color C_CHECK   = new Color(0x7A2E10);
 
-    // ─── MODELOS ───────────────────────────────────
     static class DatoVenta {
         String dia; double ventas; int mesas;
         DatoVenta(String d, double v, int m) { dia=d; ventas=v; mesas=m; }
@@ -49,15 +58,13 @@ public class PanelReportes extends JPanel {
         }
     }
 
-    // ─── DATOS DUMMY ───────────────────────────────
-    private String dVT="$23,430", dOrd="186", dProp="$2,404", dCfdi="13";
+    private String dVT="$0.00", dOrd="0", dProp="$0.00", dCfdi="0";
     private final List<DatoVenta>   ventas        = new ArrayList<>();
     private final List<DatoPropina> propinas      = new ArrayList<>();
     private final List<Transaccion> transacciones = new ArrayList<>();
-    private double dEfM=7200, dTaM=4180, dMiM=1100;
-    private String dEfS="$7,200.00", dTaS="$4,180.00", dMiS="$1,100.00";
+    private double dEfM=0, dTaM=0, dMiM=0;
+    private String dEfS="$0.00", dTaS="$0.00", dMiS="$0.00";
 
-    // ─── COMPONENTES ACTUALIZABLES ─────────────────
     private JLabel        lblVT, lblOrd, lblProp, lblCfdi;
     private GraficaBarras grafica;
     private Barra         bEf, bTa, bMi;
@@ -66,11 +73,11 @@ public class PanelReportes extends JPanel {
     private JPanel        panelTx;
     private JPanel        contenido;
 
-    // ─── CONSTRUCTOR ───────────────────────────────
     public PanelReportes() {
+        apiClient = new ApiClient();
+
         setLayout(new BorderLayout());
         setBackground(C_BG);
-        inicializarDummy();
 
         contenido = buildContenido();
 
@@ -82,12 +89,9 @@ public class PanelReportes extends JPanel {
         scroll.getVerticalScrollBar().setUnitIncrement(20);
         add(scroll, BorderLayout.CENTER);
 
-        actualizarDatos();
+        cargarDatosDesdeBackend();
     }
 
-    // ═══════════════════════════════════════════════
-    // CONTENIDO PRINCIPAL
-    // ═══════════════════════════════════════════════
     private JPanel buildContenido() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(C_BG);
@@ -98,7 +102,6 @@ public class PanelReportes extends JPanel {
         gc.weightx = 1.0;
         gc.gridx   = 0;
 
-        // ── Titulo + separador ──
         JLabel tit = new JLabel("Reportes");
         tit.setFont(new Font("Arial", Font.BOLD, 30));
         tit.setForeground(C_ACCENT);
@@ -111,11 +114,9 @@ public class PanelReportes extends JPanel {
         gc.gridy=0; gc.insets=new Insets(0,0,14,0);
         p.add(top, gc);
 
-        // ── Banner (70px) ──
         gc.gridy=1; gc.insets=new Insets(0,0,16,0);
         p.add(buildBanner(), gc);
 
-        // ── Fila 1: Grafica | Metodos de pago (280px) ──
         JPanel fila1 = buildFila2Cols(
                 buildCardGrafica(),
                 buildCardMetodos(),
@@ -123,17 +124,15 @@ public class PanelReportes extends JPanel {
         gc.gridy=2; gc.insets=new Insets(0,0,16,0);
         p.add(fila1, gc);
 
-        // ── Fila 2: Detalles por dia | Propinas (285px - sin scrollbars) ──
         JPanel fila2 = buildFila2Cols(
-                buildCardTabla("Detalles por dia",
-                        new String[]{"Dia","Ventas","Mesas"}, true),
+                buildCardTabla("Detalles por día",
+                        new String[]{"Día","Ventas","Mesas"}, true),
                 buildCardTabla("Propinas",
-                        new String[]{"Dia","Propina","Mesas"}, false),
+                        new String[]{"Día","Propina","Mesas"}, false),
                 285);
         gc.gridy=3; gc.insets=new Insets(0,0,24,0);
         p.add(fila2, gc);
 
-        // ── Tabla resumen de transacciones ──
         gc.gridy=4; gc.insets=new Insets(0,0,0,0);
         p.add(buildSeccionTx(), gc);
 
@@ -161,9 +160,6 @@ public class PanelReportes extends JPanel {
         }};
     }
 
-    // ═══════════════════════════════════════════════
-    // BANNER
-    // ═══════════════════════════════════════════════
     private JPanel buildBanner() {
         JPanel ban = new JPanel(new GridLayout(1,7,0,0)) {
             @Override protected void paintComponent(Graphics g) {
@@ -177,13 +173,13 @@ public class PanelReportes extends JPanel {
         ban.setPreferredSize(new Dimension(0,70));
         ban.setMaximumSize(new Dimension(Integer.MAX_VALUE,70));
 
-        lblVT=mkVB("$23,430"); lblOrd=mkVB("186");
-        lblProp=mkVB("$2,404"); lblCfdi=mkVB("13");
+        lblVT=mkVB("$0.00"); lblOrd=mkVB("0");
+        lblProp=mkVB("$0.00"); lblCfdi=mkVB("0");
 
         ban.add(mkCB("VENTAS TOTALES",lblVT)); ban.add(mkSB());
-        ban.add(mkCB("ORDENES",       lblOrd)); ban.add(mkSB());
+        ban.add(mkCB("ÓRDENES",       lblOrd)); ban.add(mkSB());
         ban.add(mkCB("PROPINAS",      lblProp)); ban.add(mkSB());
-        ban.add(mkCB("CFDIS EMITIDOS",lblCfdi));
+        ban.add(mkCB("MESAS OCUPADAS",lblCfdi));
         return ban;
     }
 
@@ -209,15 +205,12 @@ public class PanelReportes extends JPanel {
         p.setOpaque(false); p.setPreferredSize(new Dimension(2,0)); return p;
     }
 
-    // ═══════════════════════════════════════════════
-    // GRAFICA DE BARRAS VERTICALES
-    // ═══════════════════════════════════════════════
     private JPanel buildCardGrafica() {
         JPanel card=mkCard();
         card.setLayout(new BorderLayout(0,10));
         card.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
         grafica=new GraficaBarras();
-        card.add(mkTit("Ventas por dia"), BorderLayout.NORTH);
+        card.add(mkTit("Ventas por día"), BorderLayout.NORTH);
         card.add(grafica, BorderLayout.CENTER);
         return card;
     }
@@ -238,6 +231,7 @@ public class PanelReportes extends JPanel {
 
             double maxV=datos.stream().mapToDouble(d->d.ventas).max().orElse(1);
             double maxE=Math.ceil(maxV/1000.0)*1000;
+            if (maxE == 0) maxE = 1000;
 
             g2.setFont(new Font("Arial",Font.PLAIN,10));
             for(int i=0;i<=6;i++){
@@ -269,9 +263,6 @@ public class PanelReportes extends JPanel {
         }
     }
 
-    // ═══════════════════════════════════════════════
-    // METODOS DE PAGO
-    // ═══════════════════════════════════════════════
     private JPanel buildCardMetodos() {
         JPanel card=mkCard();
         card.setLayout(new BorderLayout());
@@ -281,7 +272,7 @@ public class PanelReportes extends JPanel {
         inner.setLayout(new BoxLayout(inner,BoxLayout.Y_AXIS));
         inner.setOpaque(false);
 
-        inner.add(mkTit("Metodos de pago"));
+        inner.add(mkTit("Métodos de pago"));
         inner.add(Box.createRigidArea(new Dimension(0,16)));
 
         lEf=mkLM(); bEf=new Barra(C_BAR_EF,C_BAR_BG); lPEf=mkLP();
@@ -319,9 +310,6 @@ public class PanelReportes extends JPanel {
         return f;
     }
 
-    // ═══════════════════════════════════════════════
-    // TABLAS: DETALLES POR DIA y PROPINAS (SIN SCROLLBARS)
-    // ═══════════════════════════════════════════════
     private JPanel buildCardTabla(String titulo,String[] cols,boolean esDet){
         JPanel card=mkCard();
         card.setLayout(new BorderLayout(0,10));
@@ -335,7 +323,6 @@ public class PanelReportes extends JPanel {
         JTable tabla=mkTablaEstilo(mdl);
         tabla.setFillsViewportHeight(true);
 
-        // Ocultamos completamente las barras de scroll
         JScrollPane scroll=new JScrollPane(tabla,
                 JScrollPane.VERTICAL_SCROLLBAR_NEVER,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -347,11 +334,8 @@ public class PanelReportes extends JPanel {
         return card;
     }
 
-    // ═══════════════════════════════════════════════
-    // TABLA RESUMEN DE TRANSACCIONES
-    // ═══════════════════════════════════════════════
     private static final double[] PESOS  = {0.06,0.10,0.40,0.16,0.16,0.12};
-    private static final String[] ENCABS = {"#","Hora","Detalle","Metodo","Monto","CFDI"};
+    private static final String[] ENCABS = {"#","Hora","Detalle","Método","Monto","CFDI"};
 
     private JPanel buildSeccionTx() {
         JPanel sec=new JPanel(new BorderLayout(0,8));
@@ -457,7 +441,6 @@ public class PanelReportes extends JPanel {
         }
     }
 
-    // ─── TABLA ESTILIZADA ──────────────────────────
     private JTable mkTablaEstilo(DefaultTableModel mdl){
         JTable t=new JTable(mdl);
         t.setFont(new Font("Arial",Font.PLAIN,13));
@@ -473,8 +456,8 @@ public class PanelReportes extends JPanel {
         hdr.setFont(new Font("Arial",Font.BOLD,13));
         hdr.setBackground(C_HDR_TBL); hdr.setForeground(C_WHITE);
         hdr.setPreferredSize(new Dimension(0,36));
-        hdr.setReorderingAllowed(false); // Sin mover columnas
-        hdr.setResizingAllowed(false);   // Sin redimensionar ancho con mouse
+        hdr.setReorderingAllowed(false);
+        hdr.setResizingAllowed(false);
 
         hdr.setDefaultRenderer(new DefaultTableCellRenderer(){
             @Override public Component getTableCellRendererComponent(
@@ -504,7 +487,6 @@ public class PanelReportes extends JPanel {
         return t;
     }
 
-    // ─── BARRA ─────────────────────────────────────
     private static class Barra extends JPanel {
         private final Color cF,cB; private double fr=0;
         Barra(Color f,Color b){cF=f;cB=b;setOpaque(false);
@@ -519,7 +501,6 @@ public class PanelReportes extends JPanel {
         }
     }
 
-    // ─── HELPERS ───────────────────────────────────
     private JLabel mkTit(String t){
         JLabel l=new JLabel(t);
         l.setFont(new Font("Arial",Font.BOLD,14)); l.setForeground(C_ACCENT); return l;
@@ -539,9 +520,139 @@ public class PanelReportes extends JPanel {
         c.setOpaque(false); return c;
     }
 
-    // ═══════════════════════════════════════════════
-    // ACTUALIZAR UI
-    // ═══════════════════════════════════════════════
+    private void cargarDatosDesdeBackend() {
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                return apiClient.obtenerDashboardReportes();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String jsonResponse = get();
+                    procesarJsonDashboard(jsonResponse);
+                } catch (Exception e) {
+                    System.err.println("Error cargando dashboard de reportes: " + e.getMessage());
+                    inicializarDummy();
+                    actualizarDatos();
+                }
+            }
+        }.execute();
+    }
+
+    private String formatearMoneda(Object val) {
+        if (val == null) return "$0.00";
+        if (val instanceof Number) {
+            return String.format("$%,.2f", ((Number) val).doubleValue());
+        }
+        String s = val.toString().trim();
+        if (s.startsWith("$")) return s;
+        try {
+            double d = Double.parseDouble(s);
+            return String.format("$%,.2f", d);
+        } catch (Exception e) {
+            return s.isEmpty() ? "$0.00" : s;
+        }
+    }
+
+    private void procesarJsonDashboard(String json) {
+        try {
+            JSONObject obj = new JSONObject(json);
+
+            JSONObject resumen = obj.optJSONObject("resumen");
+            double vHoy = 0;
+            int ordenesBanner = 0;
+            int mOcupadas = 0;
+
+            if (resumen != null) {
+                vHoy = resumen.optDouble("ventas_hoy", 0.0);
+                // Priorizamos ordenes_hoy para que concuerde con el banner, sino pedidos_activos
+                ordenesBanner = resumen.optInt("ordenes_hoy", resumen.optInt("pedidos_activos", 0));
+                mOcupadas = resumen.optInt("mesas_ocupadas", resumen.optInt("personal_activo", 0));
+            } else {
+                vHoy = obj.optDouble("ventas_hoy", 0.0);
+                ordenesBanner = obj.optInt("ordenes_hoy", 0);
+                mOcupadas = obj.optInt("personal_activo", 0);
+            }
+
+            JSONArray diarios = obj.optJSONArray("datos_diarios");
+            List<DatoVenta> nuevasVentas = new ArrayList<>();
+            List<DatoPropina> nuevasPropinas = new ArrayList<>();
+            double totalPropinas = 0;
+
+            if (diarios != null) {
+                for (int i = 0; i < diarios.length(); i++) {
+                    JSONObject d = diarios.getJSONObject(i);
+                    String dia = d.optString("dia", "Día " + (i + 1));
+                    double v = d.optDouble("ventas", 0.0);
+                    double p = d.optDouble("propina", 0.0);
+                    int m = d.optInt("mesas", 0);
+
+                    String diaCorto = dia.length() >= 3 ? dia.substring(0, 3) : dia;
+                    nuevasVentas.add(new DatoVenta(diaCorto, v, m));
+                    nuevasPropinas.add(new DatoPropina(dia, String.format("$%,.2f", p), m));
+                    totalPropinas += p;
+                }
+            }
+
+            JSONArray metodos = obj.optJSONArray("metodos_pago");
+            double ef = 0, ta = 0, mi = 0;
+            if (metodos != null) {
+                for (int i = 0; i < metodos.length(); i++) {
+                    JSONObject m = metodos.getJSONObject(i);
+                    String tipo = m.optString("metodo_pago", m.optString("metodo", "")).toLowerCase();
+                    double total = m.optDouble("total", m.optDouble("monto", 0.0));
+
+                    if (tipo.contains("efectivo")) ef += total;
+                    else if (tipo.contains("tarjeta")) ta += total;
+                    else mi += total;
+                }
+            }
+
+            // --- LECTURA DE TRANSACCIONES (AGREGADO) ---
+            transacciones.clear();
+            JSONArray txArray = obj.optJSONArray("transacciones");
+            if (txArray != null) {
+                for (int i = 0; i < txArray.length(); i++) {
+                    JSONObject t = txArray.getJSONObject(i);
+
+                    String id      = t.optString("id", "#" + (i + 1));
+                    String hora    = t.optString("hora", "--:--");
+                    String detalle = t.optString("detalle", "Sin detalle");
+                    String metodo  = t.optString("metodo", "Efectivo");
+                    String monto   = formatearMoneda(t.optDouble("monto", 0.0));
+                    boolean cfdi   = t.optBoolean("cfdi", false);
+
+                    transacciones.add(new Transaccion(id, hora, detalle, metodo, monto, cfdi));
+                }
+            }
+
+            setMetricas(
+                    formatearMoneda(vHoy),
+                    String.valueOf(ordenesBanner),
+                    String.format("$%,.2f", totalPropinas),
+                    String.valueOf(mOcupadas)
+            );
+
+            if (!nuevasVentas.isEmpty()) setVentas(nuevasVentas);
+            if (!nuevasPropinas.isEmpty()) setPropinas(nuevasPropinas);
+
+            setMetodosPago(
+                    ef, formatearMoneda(ef),
+                    ta, formatearMoneda(ta),
+                    mi, formatearMoneda(mi)
+            );
+
+            // actualizarDatos() ya invoca a poblarTx(), por lo que renderizará las transacciones mapeadas
+            actualizarDatos();
+
+        } catch (Exception e) {
+            System.err.println("Error procesando JSON de Dashboard: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void actualizarDatos(){
         lblVT.setText(dVT); lblOrd.setText(dOrd);
         lblProp.setText(dProp); lblCfdi.setText(dCfdi);
@@ -556,7 +667,7 @@ public class PanelReportes extends JPanel {
         if(mdlDet!=null){
             mdlDet.setRowCount(0);
             for(DatoVenta d:ventas)
-                mdlDet.addRow(new Object[]{d.dia,String.format("$%,.0f",d.ventas),d.mesas});
+                mdlDet.addRow(new Object[]{d.dia,String.format("$%,.2f",d.ventas),d.mesas});
         }
         if(mdlProp2!=null){
             mdlProp2.setRowCount(0);
@@ -568,10 +679,9 @@ public class PanelReportes extends JPanel {
         repaint();
     }
 
-    // ═══════════════════════════════════════════════
-    // DATOS DUMMY (eliminar al conectar BD)
-    // ═══════════════════════════════════════════════
     private void inicializarDummy(){
+        dVT = "$23,430"; dOrd = "186"; dProp = "$2,404"; dCfdi = "13";
+        ventas.clear();
         ventas.add(new DatoVenta("Lun",3200,24));
         ventas.add(new DatoVenta("Mar",4800,31));
         ventas.add(new DatoVenta("Mie",3900,27));
@@ -579,6 +689,7 @@ public class PanelReportes extends JPanel {
         ventas.add(new DatoVenta("Vie",6200,42));
         ventas.add(new DatoVenta("Sab",4500,28));
 
+        propinas.clear();
         propinas.add(new DatoPropina("Lunes",   "$240",24));
         propinas.add(new DatoPropina("Martes",  "$360",31));
         propinas.add(new DatoPropina("Miercoles","$290",27));
@@ -586,14 +697,15 @@ public class PanelReportes extends JPanel {
         propinas.add(new DatoPropina("Viernes", "$520",42));
         propinas.add(new DatoPropina("Sabado",  "$340",28));
 
+        transacciones.clear();
         for(int i=0;i<8;i++)
             transacciones.add(new Transaccion(
                     "#04"+(i+1),"1"+i+":48","3 productos","Efectivo","$360",i==1||i==3||i==5));
+
+        dEfM=7200; dTaM=4180; dMiM=1100;
+        dEfS="$7,200.00"; dTaS="$4,180.00"; dMiS="$1,100.00";
     }
 
-    // ═══════════════════════════════════════════════
-    // API PUBLICA PARA BD
-    // ═══════════════════════════════════════════════
     public void setMetricas(String vt,String ord,String prop,String cfdi){dVT=vt;dOrd=ord;dProp=prop;dCfdi=cfdi;actualizarDatos();}
     public void setVentas(List<DatoVenta> l){ventas.clear();ventas.addAll(l);actualizarDatos();}
     public void setPropinas(List<DatoPropina> l){propinas.clear();propinas.addAll(l);actualizarDatos();}

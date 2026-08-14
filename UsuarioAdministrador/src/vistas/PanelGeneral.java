@@ -1,5 +1,9 @@
 package vistas;
 
+import servicios.ApiClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
@@ -8,13 +12,9 @@ import java.util.List;
 
 /**
  * Vista: PanelGeneral — Dashboard del Administrador
- * Diseño responsivo, proporciones fijas y tablas desplazables.
  */
-public class PanelGeneral extends JPanel {
+public class PanelGeneral extends JPanel implements Actualizables {
 
-    // ─────────────────────────────────────────────
-    // COLORES DE LA PALETA
-    // ─────────────────────────────────────────────
     private static final Color C_BG        = new Color(0xFBF5EC);
     private static final Color C_ACCENT    = new Color(0x6B2D1A);
     private static final Color C_DIV       = new Color(0xC8A882);
@@ -31,60 +31,52 @@ public class PanelGeneral extends JPanel {
     private static final Color C_BTN_DK   = new Color(0x3A2010);
     private static final Color C_BTN_OR   = new Color(0xD48000);
 
-    // Altura fija del bloque completo de header (título + separador + banner).
-    // Al capar el maximumSize del header a este valor, evitamos que el
-    // BoxLayout le regale el espacio sobrante del JScrollPane (que antes
-    // terminaba estirando el banner — CENTER de un BorderLayout siempre
-    // llena el espacio disponible de su contenedor).
     private static final int HEADER_MAX_HEIGHT = 148;
-
-    // Alto de CADA fila de tarjetas (Catálogo/Inventario y Corte/Asistencias/
-    // Acciones). Ambas filas usan el MISMO valor para que las tarjetas se
-    // vean parejas entre sí y con más presencia frente al banner.
     private static final int FILA_ALTO = 420;
 
     private final VentanaAdmin ventana;
+    private ApiClient apiClient;
 
-    // ─────────────────────────────────────────────
-    // MODELOS DE DATOS
-    // ─────────────────────────────────────────────
-    static class Producto {
+    public static class Producto {
         String nombre, categoria, precio, estado;
-        Producto(String n, String c, String p, String e) {
+        public Producto(String n, String c, String p, String e) {
             nombre=n; categoria=c; precio=p; estado=e;
         }
     }
 
-    static class ItemInventario {
+    public static class ItemInventario {
         String nombre, cantidad;
         double fraccion;
         Color colorBarra;
-        ItemInventario(String n, String c, double f, Color col) {
+        public ItemInventario(String n, String c, double f, Color col) {
             nombre=n; cantidad=c; fraccion=f; colorBarra=col;
         }
     }
 
-    static class Asistencia {
+    public static class Asistencia {
         String nombre, rol;
-        Asistencia(String n, String r) { nombre=n; rol=r; }
+        public Asistencia(String n, String r) { nombre=n; rol=r; }
     }
 
-    // Datos Dummy
-    private String dVentasHoy = "$12,480", dOrdenes = "68", dVentasSem = "$23,430", dPersonal = "7";
+    private String dVentasHoy = "$0.00", dOrdenes = "0", dVentasSem = "$0.00", dPersonal = "0";
     private final List<Producto>       productos   = new ArrayList<>();
     private final List<ItemInventario> inventario  = new ArrayList<>();
     private final List<Asistencia>     asistencias = new ArrayList<>();
-    private double dEfM=7200, dTaM=4180, dMiM=1100;
-    private String dEfS="$7,200", dTaS="$4,180", dMiS="$1,100";
+    private double dEfM=0, dTaM=0, dMiM=0;
+    private String dEfS="$0.00", dTaS="$0.00", dMiS="$0.00";
 
-    // Componentes interactivos
     private JLabel lblVH, lblOrd, lblVS, lblPer;
     private JPanel pProductos, pInventario, pAsistencias;
     private Barra  bEf, bTa, bMi;
     private JLabel lEf, lTa, lMi;
 
     public PanelGeneral(VentanaAdmin ventana) {
+        this(ventana, new ApiClient());
+    }
+
+    public PanelGeneral(VentanaAdmin ventana, ApiClient apiClient) {
         this.ventana = ventana;
+        this.apiClient = apiClient;
         setLayout(new BorderLayout());
         setBackground(C_BG);
 
@@ -100,6 +92,22 @@ public class PanelGeneral extends JPanel {
 
         add(scrollGeneral, BorderLayout.CENTER);
         actualizarDatos();
+
+        if (this.apiClient != null) {
+            cargarDatosDesdeBackend(this.apiClient);
+        }
+    }
+
+    @Override
+    public void recargarDatos() {
+        if (this.apiClient != null) {
+            cargarDatosDesdeBackend(this.apiClient);
+        }
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.apiClient = apiClient;
+        cargarDatosDesdeBackend(this.apiClient);
     }
 
     private JPanel buildContenido() {
@@ -111,17 +119,11 @@ public class PanelGeneral extends JPanel {
         p.add(buildHeader());
         p.add(Box.createVerticalStrut(16));
         p.add(buildCuerpo());
-        // Relleno flexible: absorbe cualquier sobrante de altura del
-        // JScrollPane para que NINGÚN otro bloque (header, filas) tenga
-        // que estirarse para llenar el espacio vacío.
         p.add(Box.createVerticalGlue());
 
         return p;
     }
 
-    // ═══════════════════════════════════════════════
-    // HEADER & BANNER
-    // ═══════════════════════════════════════════════
     private JPanel buildHeader() {
         JPanel p = new JPanel(new BorderLayout(0, 10));
         p.setOpaque(false);
@@ -130,23 +132,21 @@ public class PanelGeneral extends JPanel {
         t.setFont(new Font("Arial", Font.BOLD, 26));
         t.setForeground(C_ACCENT);
 
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setOpaque(false);
+        titlePanel.add(t, BorderLayout.WEST);
+
         JSeparator sep = new JSeparator();
         sep.setForeground(C_DIV);
 
         JPanel top = new JPanel(new BorderLayout(0, 6));
         top.setOpaque(false);
-        top.add(t, BorderLayout.NORTH);
+        top.add(titlePanel, BorderLayout.NORTH);
         top.add(sep, BorderLayout.CENTER);
 
         p.add(top, BorderLayout.NORTH);
         p.add(buildBanner(), BorderLayout.CENTER);
 
-        // ── FIX: capar el alto máximo del header ──
-        // Sin esto, un JPanel con BorderLayout devuelve Integer.MAX_VALUE
-        // como alto máximo. Al vivir dentro de un BoxLayout metido en un
-        // JScrollPane, cualquier espacio sobrante del viewport se lo
-        // llevaba ÉL (por ser el único sin tope), y como el banner ocupa
-        // el CENTER de este BorderLayout, terminaba estirándose gigante.
         p.setMaximumSize(new Dimension(Integer.MAX_VALUE, HEADER_MAX_HEIGHT));
         p.setPreferredSize(new Dimension(0, HEADER_MAX_HEIGHT));
 
@@ -166,8 +166,8 @@ public class PanelGeneral extends JPanel {
         ban.setPreferredSize(new Dimension(0, 84));
         ban.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
 
-        lblVH  = mkVB("$12,480"); lblOrd = mkVB("68");
-        lblVS  = mkVB("$23,430"); lblPer = mkVB("7");
+        lblVH  = mkVB("$0.00"); lblOrd = mkVB("0");
+        lblVS  = mkVB("$0.00"); lblPer = mkVB("0");
 
         ban.add(mkCB("VENTAS HOY",  lblVH));  ban.add(mkSB());
         ban.add(mkCB("ÓRDENES",     lblOrd)); ban.add(mkSB());
@@ -210,19 +210,12 @@ public class PanelGeneral extends JPanel {
         return p;
     }
 
-    // ═══════════════════════════════════════════════
-    // CUERPO (FILA 1 Y FILA 2)
-    // ═══════════════════════════════════════════════
     private JPanel buildCuerpo() {
         JPanel cuerpo = new JPanel();
         cuerpo.setLayout(new BoxLayout(cuerpo, BoxLayout.Y_AXIS));
         cuerpo.setOpaque(false);
-        // También capamos el alto máximo del contenedor del cuerpo para
-        // que no herede espacio sobrante del scroll (mismo principio que
-        // en el header).
         cuerpo.setMaximumSize(new Dimension(Integer.MAX_VALUE, FILA_ALTO + 20 + FILA_ALTO));
 
-        // Fila 1: Catálogo (izq) | Inventario (der)
         JPanel fila1 = new JPanel(new GridLayout(1, 2, 16, 0));
         fila1.setOpaque(false);
         fila1.setPreferredSize(new Dimension(0, FILA_ALTO));
@@ -230,7 +223,6 @@ public class PanelGeneral extends JPanel {
         fila1.add(buildCardCatalogo());
         fila1.add(buildCardInventario());
 
-        // Fila 2: Corte | Asistencias | Acciones
         JPanel fila2 = new JPanel(new GridLayout(1, 3, 16, 0));
         fila2.setOpaque(false);
         fila2.setPreferredSize(new Dimension(0, FILA_ALTO));
@@ -246,7 +238,6 @@ public class PanelGeneral extends JPanel {
         return cuerpo;
     }
 
-    // ─── CARD 1: CATÁLOGO DE PRODUCTOS (SCROLLABLE) ───
     private JPanel buildCardCatalogo() {
         JPanel card = mkCard();
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
@@ -314,7 +305,6 @@ public class PanelGeneral extends JPanel {
         return b;
     }
 
-    // ─── CARD 2: INVENTARIO (SCROLLABLE / BARRAS UNIFORMES) ───
     private JPanel buildCardInventario() {
         JPanel card = mkCard();
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
@@ -367,7 +357,6 @@ public class PanelGeneral extends JPanel {
         pInventario.revalidate(); pInventario.repaint();
     }
 
-    // ─── CARD 3: CORTE DE CAJA (ESTRUCTURA IDÉNTICA A INVENTARIO) ───
     private JPanel buildCardCorte() {
         JPanel card = mkCard();
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
@@ -416,7 +405,6 @@ public class PanelGeneral extends JPanel {
         return fila;
     }
 
-    // ─── CARD 4: ASISTENCIAS HOY ───
     private JPanel buildCardAsistencias() {
         JPanel card = mkCard();
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
@@ -461,7 +449,6 @@ public class PanelGeneral extends JPanel {
         pAsistencias.revalidate(); pAsistencias.repaint();
     }
 
-    // ─── CARD 5: ACCIONES RÁPIDAS ───
     private JPanel buildCardAcciones() {
         JPanel card = mkCard();
         card.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
@@ -520,9 +507,6 @@ public class PanelGeneral extends JPanel {
         return btn;
     }
 
-    // ═══════════════════════════════════════════════
-    // COMPONENTE DE BARRA
-    // ═══════════════════════════════════════════════
     private static class Barra extends JPanel {
         private final Color cF, cB;
         private double fr = 0;
@@ -554,7 +538,6 @@ public class PanelGeneral extends JPanel {
         }
     }
 
-    // ─── HELPERS DE DISEÑO ───
     private JLabel mkTitCard(String t) {
         JLabel l = new JLabel(t);
         l.setFont(new Font("Arial", Font.BOLD, 18));
@@ -579,9 +562,6 @@ public class PanelGeneral extends JPanel {
         return c;
     }
 
-    // ═══════════════════════════════════════════════
-    // ACTUALIZACIÓN DE DATOS
-    // ═══════════════════════════════════════════════
     public void actualizarDatos() {
         lblVH.setText(dVentasHoy); lblOrd.setText(dOrdenes);
         lblVS.setText(dVentasSem); lblPer.setText(dPersonal);
@@ -603,21 +583,226 @@ public class PanelGeneral extends JPanel {
         productos.add(new Producto("Pozole rojo",      "Plato fuerte","$95.00","Activo"));
         productos.add(new Producto("Tostadas de pata", "Entrada",     "$45.00","Pausado"));
         productos.add(new Producto("Agua de Jamaica",  "Bebida",      "$20.00","Activo"));
-        productos.add(new Producto("Combo familiar",   "Combo",       "$210.00","Activo"));
-        productos.add(new Producto("Caldo de res",     "Plato fuerte","$90.00","Activo"));
-        productos.add(new Producto("Sopa de lima",     "Entrada",     "$55.00","Activo"));
 
         inventario.add(new ItemInventario("Jitomate",    "2 kg",   0.15, C_BAR_MI));
         inventario.add(new ItemInventario("Queso Oaxaca","500 g",  0.35, C_BAR_TA));
         inventario.add(new ItemInventario("Pollo",       "4.5 kg", 0.60, C_BAR_EF));
-        inventario.add(new ItemInventario("Tortillas",   "8 kg",   0.80, C_BAR_EF));
 
         asistencias.add(new Asistencia("Hasiel","Mesero"));
         asistencias.add(new Asistencia("Marcos","Mesero"));
-        asistencias.add(new Asistencia("Emilio","Mesero"));
-        asistencias.add(new Asistencia("juan",  "Mesero"));
-        asistencias.add(new Asistencia("victor","Mesero"));
-        asistencias.add(new Asistencia("Miguel","Mesero"));
+    }
+
+    private JSONArray obtenerJsonArraySeguro(String jsonText) {
+        if (jsonText == null || jsonText.trim().isEmpty()) {
+            return new JSONArray();
+        }
+        String trimmed = jsonText.trim();
+        if (trimmed.startsWith("{")) {
+            JSONObject obj = new JSONObject(trimmed);
+            if (obj.has("data") && !obj.isNull("data")) {
+                return obj.getJSONArray("data");
+            }
+            return new JSONArray();
+        } else if (trimmed.startsWith("[")) {
+            return new JSONArray(trimmed);
+        }
+        return new JSONArray();
+    }
+
+    private String formatearMoneda(Object val) {
+        if (val == null) return "$0.00";
+        if (val instanceof Number) {
+            return String.format("$%,.2f", ((Number) val).doubleValue());
+        }
+        String s = val.toString().trim();
+        if (s.startsWith("$")) return s;
+        try {
+            double d = Double.parseDouble(s);
+            return String.format("$%,.2f", d);
+        } catch (Exception e) {
+            return s.isEmpty() ? "$0.00" : s;
+        }
+    }
+
+    public void cargarDatosDesdeBackend(ApiClient client) {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            private String vh = dVentasHoy, ord = dOrdenes, vs = dVentasSem, per = dPersonal;
+            private final List<Producto> listaProds = new ArrayList<>();
+            private final List<ItemInventario> listaInv = new ArrayList<>();
+            private final List<Asistencia> listaAsist = new ArrayList<>();
+            private double ef = dEfM, ta = dTaM, mi = dMiM;
+            private String efS = dEfS, taS = dTaS, miS = dMiS;
+
+            @Override
+            protected Void doInBackground() {
+                // 1. Cargar Reportes / Corte (Parsing flexible plano o anidado)
+                try {
+                    String jsonRep = client.obtenerDashboardReportes();
+                    if (jsonRep != null && jsonRep.trim().startsWith("{")) {
+                        JSONObject objRep = new JSONObject(jsonRep);
+
+                        JSONObject resumen = objRep.optJSONObject("resumen");
+                        if (resumen != null) {
+                            vh = formatearMoneda(resumen.opt("ventas_hoy"));
+                            ord = String.valueOf(resumen.optInt("ordenes_hoy", resumen.optInt("pedidos_activos", 0)));
+                            vs = formatearMoneda(resumen.opt("ventas_semana"));
+                            per = String.valueOf(resumen.optInt("personal_activo", resumen.optInt("mesas_ocupadas", 0)));
+                        } else {
+                            if (objRep.has("ventas_hoy")) vh = formatearMoneda(objRep.get("ventas_hoy"));
+                            if (objRep.has("ordenes_hoy")) ord = String.valueOf(objRep.optInt("ordenes_hoy", 0));
+                            if (objRep.has("ventas_semana")) vs = formatearMoneda(objRep.get("ventas_semana"));
+                            if (objRep.has("personal_activo")) per = String.valueOf(objRep.optInt("personal_activo", 0));
+                        }
+
+                        JSONObject corte = objRep.optJSONObject("corte_caja");
+                        if (corte != null) {
+                            ef = corte.optDouble("efectivo_monto", corte.optDouble("efectivo", 0.0));
+                            efS = corte.has("efectivo_texto") ? corte.optString("efectivo_texto") : formatearMoneda(ef);
+
+                            ta = corte.optDouble("tarjeta_monto", corte.optDouble("tarjeta", 0.0));
+                            taS = corte.has("tarjeta_texto") ? corte.optString("tarjeta_texto") : formatearMoneda(ta);
+
+                            mi = corte.optDouble("mixto_monto", corte.optDouble("mixto", 0.0));
+                            miS = corte.has("mixto_texto") ? corte.optString("mixto_texto") : formatearMoneda(mi);
+                        } else if (objRep.has("metodos_pago")) {
+                            JSONArray metodos = objRep.optJSONArray("metodos_pago");
+                            if (metodos != null) {
+                                ef = 0; ta = 0; mi = 0;
+                                for (int i = 0; i < metodos.length(); i++) {
+                                    JSONObject m = metodos.getJSONObject(i);
+                                    String tipo = m.optString("metodo_pago", m.optString("metodo", "")).toLowerCase();
+                                    double total = m.optDouble("total", m.optDouble("monto", 0.0));
+                                    if (tipo.contains("efectivo")) ef += total;
+                                    else if (tipo.contains("tarjeta")) ta += total;
+                                    else mi += total;
+                                }
+                                efS = formatearMoneda(ef);
+                                taS = formatearMoneda(ta);
+                                miS = formatearMoneda(mi);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar reportes: " + e.getMessage());
+                }
+
+                // 2. Cargar Productos
+                try {
+                    String jsonProds = client.obtenerProductos();
+                    JSONArray arrProds = obtenerJsonArraySeguro(jsonProds);
+
+                    for (int i = 0; i < arrProds.length(); i++) {
+                        JSONObject p = arrProds.getJSONObject(i);
+                        String nombre = p.optString("nombre", p.optString("name", "Producto"));
+
+                        String cat = "General";
+                        if (p.has("categoria") && !p.isNull("categoria")) {
+                            Object catObj = p.get("categoria");
+                            if (catObj instanceof JSONObject) {
+                                cat = ((JSONObject) catObj).optString("nombre", "General");
+                            } else {
+                                cat = catObj.toString();
+                            }
+                        } else if (p.has("category") && !p.isNull("category")) {
+                            Object catObj = p.get("category");
+                            if (catObj instanceof JSONObject) {
+                                cat = ((JSONObject) catObj).optString("nombre", "General");
+                            } else {
+                                cat = catObj.toString();
+                            }
+                        }
+
+                        double precVal = p.optDouble("precio", p.optDouble("price", 0.0));
+                        String precio = String.format("$%.2f", precVal);
+
+                        boolean disponible = true;
+                        if (p.has("is_disponible") && !p.isNull("is_disponible")) {
+                            disponible = p.optBoolean("is_disponible", true);
+                        } else if (p.has("disponible") && !p.isNull("disponible")) {
+                            disponible = p.optBoolean("disponible", true);
+                        }
+
+                        String estadoRaw = p.optString("estado", p.optString("status", "")).toLowerCase();
+                        boolean tienePausadoHasta = p.has("pausado_hasta")
+                                && !p.isNull("pausado_hasta")
+                                && !p.optString("pausado_hasta").trim().isEmpty();
+
+                        String estado = "Activo";
+                        if (!disponible || tienePausadoHasta || estadoRaw.contains("paus") || estadoRaw.contains("inactiv") || estadoRaw.equals("false") || estadoRaw.equals("0")) {
+                            estado = "Pausado";
+                        }
+
+                        listaProds.add(new Producto(nombre, cat, precio, estado));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar productos: " + e.getMessage());
+                }
+
+                // 3. Cargar Insumos (Inventario)
+                try {
+                    String jsonInsumos = client.obtenerInsumos();
+                    JSONArray arrIns = obtenerJsonArraySeguro(jsonInsumos);
+
+                    for (int i = 0; i < arrIns.length(); i++) {
+                        JSONObject ins = arrIns.getJSONObject(i);
+                        String nombre = ins.optString("nombre", ins.optString("name", "Insumo"));
+
+                        double stockAct = ins.has("stock_actual") ? ins.getDouble("stock_actual") : ins.optDouble("stock", 0.0);
+                        double stockMin = ins.optDouble("stock_minimo", 5.0);
+                        double stockMax = ins.optDouble("stock_maximo", Math.max(stockAct * 1.5, stockMin * 3));
+                        String unidad = ins.optString("unidad_medida", ins.optString("unidad", ""));
+
+                        double fraccion = (stockMax > 0) ? Math.min(1.0, stockAct / stockMax) : 0.5;
+
+                        Color colBarra;
+                        if (stockAct <= stockMin) {
+                            colBarra = C_BAR_MI;
+                        } else if (stockAct <= stockMin * 1.5) {
+                            colBarra = C_BAR_TA;
+                        } else {
+                            colBarra = C_BAR_EF;
+                        }
+
+                        String ctnTexto = (stockAct % 1 == 0)
+                                ? String.format("%.0f %s", stockAct, unidad).trim()
+                                : String.format("%.1f %s", stockAct, unidad).trim();
+
+                        listaInv.add(new ItemInventario(nombre, ctnTexto, fraccion, colBarra));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar inventario: " + e.getMessage());
+                }
+
+                // 4. Cargar Empleados
+                try {
+                    String jsonEmp = client.obtenerEmpleados();
+                    JSONArray arrEmp = obtenerJsonArraySeguro(jsonEmp);
+
+                    for (int i = 0; i < arrEmp.length(); i++) {
+                        JSONObject emp = arrEmp.getJSONObject(i);
+                        String nombre = emp.optString("name", emp.optString("nombre", "Empleado"));
+                        String rol = emp.optString("role", emp.optString("rol", "Mesero"));
+                        listaAsist.add(new Asistencia(nombre, rol));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar empleados: " + e.getMessage());
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if (!listaProds.isEmpty()) setProductos(listaProds);
+                if (!listaInv.isEmpty())   setInventario(listaInv);
+                if (!listaAsist.isEmpty()) setAsistencias(listaAsist);
+
+                setMetricas(vh, ord, vs, per);
+                setCorte(ef, efS, ta, taS, mi, miS);
+            }
+        };
+
+        worker.execute();
     }
 
     public void setMetricas(String vh, String ord, String vs, String per) {

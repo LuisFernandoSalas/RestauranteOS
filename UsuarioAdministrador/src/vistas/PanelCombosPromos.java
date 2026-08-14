@@ -1,5 +1,10 @@
 package vistas;
 
+import servicios.ApiClient;
+import modelos.Producto;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
@@ -9,8 +14,19 @@ import java.util.List;
 
 /**
  * Vista: PanelCombosPromos — Combos y Promos
+ * Conectada a Backend Laravel mediante ApiClient y utilizando el Modelo Oficial Producto.
  */
-public class PanelCombosPromos extends JPanel {
+public class PanelCombosPromos extends JPanel implements Actualizables {
+
+    @Override
+    public void recargarDatos() {
+        // Al presionar el botón en el menú lateral, esto volverá a hacer la petición HTTP
+        cargarProductosDesdeApi();
+        cargarCombosDesdeApi();
+    }
+
+    // ─── INSTANCIA DEL SERVICIO API ────────────────
+    private final ApiClient apiClient = new ApiClient();
 
     // ─── PALETA DE COLORES ─────────────────────────
     private static final Color C_BG        = new Color(0xFBF5EC);
@@ -37,26 +53,39 @@ public class PanelCombosPromos extends JPanel {
             SwingConstants.RIGHT, SwingConstants.LEFT, SwingConstants.CENTER, SwingConstants.CENTER
     };
 
-    // ─── MODELO DE DATOS ───────────────────────────
-    static class ProductoItem {
-        String id, nombre;
-        double precio;
-        ProductoItem(String id, String n, double p) {
-            this.id = id; this.nombre = n; this.precio = p;
+    // ─── ESTRUCTURAS AUXILIARES ────────────────────
+    static class CarritoItem {
+        Producto producto;
+        int cantidad;
+
+        CarritoItem(Producto p, int c) {
+            this.producto = p;
+            this.cantidad = c;
         }
     }
 
     static class ComboItem {
-        String id, nombre, productosStr, precio, ahorro, vigencia, estado;
-        ComboItem(String id, String n, String prod, String p, String a, String v, String e) {
-            this.id = id; this.nombre = n; this.productosStr = prod;
-            this.precio = p; this.ahorro = a; this.vigencia = v; this.estado = e;
+        int id;
+        String nombre, productosStr, estado, fechaInicio, fechaFin;
+        double precioEspecial, ahorroCalculado;
+        List<CarritoItem> items;
+
+        ComboItem(int id, String n, String prodStr, double pEspecial, double ahorro, String fIni, String fFin, String est) {
+            this.id = id;
+            this.nombre = n;
+            this.productosStr = prodStr;
+            this.precioEspecial = pEspecial;
+            this.ahorroCalculado = ahorro;
+            this.fechaInicio = fIni;
+            this.fechaFin = fFin;
+            this.estado = est;
+            this.items = new ArrayList<>();
         }
     }
 
     // ─── LISTAS DE DATOS ───────────────────────────
-    private final List<ProductoItem> productosDisponibles = new ArrayList<>();
-    private final List<ProductoItem> carritoCombo = new ArrayList<>();
+    private final List<Producto> productosDisponibles = new ArrayList<>();
+    private final List<CarritoItem> carritoCombo = new ArrayList<>();
     private final List<ComboItem> combosRegistrados = new ArrayList<>();
 
     // ─── COMPONENTES FORMULARIO ────────────────────
@@ -68,7 +97,6 @@ public class PanelCombosPromos extends JPanel {
     public PanelCombosPromos() {
         setLayout(new BorderLayout());
         setBackground(C_BG);
-        inicializarDatosDummy();
 
         JPanel contenido = buildContenido();
         JScrollPane scrollGeneral = new JScrollPane(contenido,
@@ -78,6 +106,10 @@ public class PanelCombosPromos extends JPanel {
         scrollGeneral.getViewport().setBackground(C_BG);
         scrollGeneral.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollGeneral, BorderLayout.CENTER);
+
+        // Cargar datos reales mediante ApiClient
+        cargarProductosDesdeApi();
+        cargarCombosDesdeApi();
     }
 
     // ═══════════════════════════════════════════════
@@ -115,7 +147,7 @@ public class PanelCombosPromos extends JPanel {
         gc.gridy = 4; gc.insets = new Insets(0, 0, 12, 0);
         p.add(mkSubtitulo("Combos registrados"), gc);
 
-        // 6. Tabla unificada (GridBagLayout para filas y encabezado juntos)
+        // 6. Tabla unificada
         panelTabla = new JPanel();
         panelTabla.setOpaque(false);
         gc.gridy = 5; gc.insets = new Insets(0, 0, 0, 0);
@@ -164,8 +196,8 @@ public class PanelCombosPromos extends JPanel {
 
         panel.add(buildCampo(txtNombreCombo, "Nombre del combo"));
         panel.add(buildCampo(txtPrecioEspecial, "Precio especial ($)"));
-        panel.add(buildCampo(txtFechaInicio, "Fecha inicio"));
-        panel.add(buildCampo(txtFechaFin, "Fecha fin (vacío = permanente)"));
+        panel.add(buildCampo(txtFechaInicio, "Fecha inicio (YYYY-MM-DD)"));
+        panel.add(buildCampo(txtFechaFin, "Fecha fin (YYYY-MM-DD)"));
 
         txtPrecioEspecial.addKeyListener(new KeyAdapter() {
             @Override public void keyReleased(KeyEvent e) {
@@ -200,8 +232,6 @@ public class PanelCombosPromos extends JPanel {
         scrollProds.getViewport().setOpaque(false);
         scrollProds.setPreferredSize(new Dimension(0, 220));
         scrollProds.getVerticalScrollBar().setUnitIncrement(12);
-
-        poblarListaProductos();
 
         colIzql.add(lblH1, BorderLayout.NORTH);
 
@@ -248,22 +278,8 @@ public class PanelCombosPromos extends JPanel {
         panelResumen.add(lblPrecioCombo);
         panelResumen.add(lblAhorroCliente);
 
-        JButton btnCrear = new JButton("Crear combo") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(C_TBL_HDR);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.setColor(C_WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(getText(), (getWidth() - fm.stringWidth(getText())) / 2, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
-            }
-        };
-        btnCrear.setFont(new Font("Arial", Font.BOLD, 15));
-        btnCrear.setContentAreaFilled(false); btnCrear.setBorderPainted(false); btnCrear.setFocusPainted(false);
+        JButton btnCrear = buildBoton("Crear combo");
         btnCrear.setPreferredSize(new Dimension(0, 42));
-        btnCrear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCrear.addActionListener(e -> onCrearCombo());
 
         JPanel pCentroDer = new JPanel(new BorderLayout(0, 6));
@@ -292,8 +308,8 @@ public class PanelCombosPromos extends JPanel {
 
     private void poblarListaProductos() {
         panelListaProds.removeAll();
-        for (ProductoItem prod : productosDisponibles) {
-            boolean enCarrito = carritoCombo.contains(prod);
+        for (Producto prod : productosDisponibles) {
+            boolean enCarrito = carritoCombo.stream().anyMatch(ci -> ci.producto.getId().equals(prod.getId()));
 
             JPanel card = new JPanel(new BorderLayout());
             card.setBackground(enCarrito ? new Color(0xF3E5D8) : C_WHITE);
@@ -302,9 +318,9 @@ public class PanelCombosPromos extends JPanel {
                     BorderFactory.createEmptyBorder(8, 12, 8, 12)));
             card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
-            JLabel lblInfo = new JLabel("<html><b>" + prod.nombre + "</b><br><font color='#888888'>$" + String.format("%.2f", prod.precio) + "</font></html>");
+            JLabel lblInfo = new JLabel("<html><b>" + prod.getNombre() + "</b><br><font color='#888888'>$" + String.format("%.2f", prod.getPrecio()) + "</font></html>");
 
-            JButton btnAccion = new JButton(enCarrito ? "Listo" : "+ Agregar") {
+            JButton btnAccion = new JButton(enCarrito ? "Agregado" : "+ Agregar") {
                 @Override protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -317,18 +333,20 @@ public class PanelCombosPromos extends JPanel {
                 }
             };
             btnAccion.setFont(new Font("Arial", Font.BOLD, 12));
-            btnAccion.setContentAreaFilled(false); btnAccion.setBorderPainted(false); btnAccion.setFocusPainted(false);
+            btnAccion.setOpaque(false);
+            btnAccion.setContentAreaFilled(false);
+            btnAccion.setBorderPainted(false);
+            btnAccion.setFocusPainted(false);
+            btnAccion.setBorder(BorderFactory.createEmptyBorder());
             btnAccion.setPreferredSize(new Dimension(85, 28));
             btnAccion.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             btnAccion.addActionListener(e -> {
-                if (enCarrito) {
-                    carritoCombo.remove(prod);
-                } else {
-                    carritoCombo.add(prod);
+                if (!enCarrito) {
+                    carritoCombo.add(new CarritoItem(prod, 1));
+                    poblarListaProductos();
+                    poblarCarritoUI();
                 }
-                poblarListaProductos();
-                poblarCarritoUI();
             });
 
             card.add(lblInfo, BorderLayout.CENTER);
@@ -342,17 +360,53 @@ public class PanelCombosPromos extends JPanel {
 
     private void poblarCarritoUI() {
         panelCarritoItems.removeAll();
-        for (ProductoItem prod : carritoCombo) {
-            JPanel card = new JPanel(new BorderLayout());
+        for (CarritoItem item : carritoCombo) {
+            JPanel card = new JPanel(new BorderLayout(8, 0));
             card.setBackground(C_WHITE);
             card.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(0xE5E5E5), 1),
                     BorderFactory.createEmptyBorder(6, 12, 6, 12)));
             card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
 
-            JLabel lblInfo = new JLabel("<html><b>" + prod.nombre + "</b><br><font color='#888888'>$" + String.format("%.2f", prod.precio) + "</font></html>");
+            JLabel lblInfo = new JLabel("<html><b>" + item.producto.getNombre() + "</b><br><font color='#888888'>$" + String.format("%.2f", item.producto.getPrecio()) + "</font></html>");
 
-            JButton btnEliminar = new JButton("Eliminar") {
+            JPanel panelCant = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+            panelCant.setOpaque(false);
+
+            JButton btnMinus = new JButton("-");
+            btnMinus.setFont(new Font("Arial", Font.BOLD, 12));
+            btnMinus.setPreferredSize(new Dimension(24, 24));
+            btnMinus.setMargin(new Insets(0, 0, 0, 0));
+            btnMinus.setFocusable(false);
+
+            btnMinus.addActionListener(e -> {
+                if (item.cantidad > 1) {
+                    item.cantidad--;
+                } else {
+                    carritoCombo.remove(item);
+                }
+                poblarListaProductos();
+                poblarCarritoUI();
+            });
+
+            JLabel lblCant = new JLabel(String.valueOf(item.cantidad));
+            lblCant.setFont(new Font("Arial", Font.BOLD, 13));
+
+            JButton btnPlus = new JButton("+");
+            btnPlus.setFont(new Font("Arial", Font.BOLD, 12));
+            btnPlus.setPreferredSize(new Dimension(24, 24));
+            btnPlus.setMargin(new Insets(0, 0, 0, 0));
+            btnPlus.addActionListener(e -> {
+                item.cantidad++;
+                actualizarResumenCarrito();
+                poblarCarritoUI();
+            });
+
+            panelCant.add(btnMinus);
+            panelCant.add(lblCant);
+            panelCant.add(btnPlus);
+
+            JButton btnEliminar = new JButton("X") {
                 @Override protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -365,18 +419,27 @@ public class PanelCombosPromos extends JPanel {
                 }
             };
             btnEliminar.setFont(new Font("Arial", Font.BOLD, 11));
-            btnEliminar.setContentAreaFilled(false); btnEliminar.setBorderPainted(false); btnEliminar.setFocusPainted(false);
-            btnEliminar.setPreferredSize(new Dimension(75, 26));
+            btnEliminar.setOpaque(false);
+            btnEliminar.setContentAreaFilled(false);
+            btnEliminar.setBorderPainted(false);
+            btnEliminar.setFocusPainted(false);
+            btnEliminar.setBorder(BorderFactory.createEmptyBorder());
+            btnEliminar.setPreferredSize(new Dimension(28, 26));
             btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             btnEliminar.addActionListener(e -> {
-                carritoCombo.remove(prod);
+                carritoCombo.remove(item);
                 poblarListaProductos();
                 poblarCarritoUI();
             });
 
+            JPanel accGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+            accGroup.setOpaque(false);
+            accGroup.add(panelCant);
+            accGroup.add(btnEliminar);
+
             card.add(lblInfo, BorderLayout.CENTER);
-            card.add(btnEliminar, BorderLayout.EAST);
+            card.add(accGroup, BorderLayout.EAST);
 
             panelCarritoItems.add(card);
             panelCarritoItems.add(Box.createVerticalStrut(6));
@@ -387,7 +450,9 @@ public class PanelCombosPromos extends JPanel {
 
     private void actualizarResumenCarrito() {
         double ind = 0.0;
-        for (ProductoItem p : carritoCombo) ind += p.precio;
+        for (CarritoItem item : carritoCombo) {
+            ind += (item.producto.getPrecio() * item.cantidad);
+        }
 
         double comboVal = 0.0;
         try {
@@ -414,7 +479,7 @@ public class PanelCombosPromos extends JPanel {
         g.fill = GridBagConstraints.BOTH;
         g.weighty = 0.0;
 
-        // 1. DIBUJAR ENCABEZADO (Fila 0)
+        // Encabezados
         for (int col = 0; col < COLS.length; col++) {
             g.gridx = col;
             g.gridy = 0;
@@ -430,7 +495,7 @@ public class PanelCombosPromos extends JPanel {
             panelTabla.add(lblH, g);
         }
 
-        // 2. DIBUJAR FILAS DE DATOS (Filas 1 en adelante)
+        // Filas
         for (int row = 0; row < combosRegistrados.size(); row++) {
             ComboItem item = combosRegistrados.get(row);
             Color bgRow = (row % 2 == 0) ? C_WHITE : C_ALT_ROW;
@@ -441,36 +506,33 @@ public class PanelCombosPromos extends JPanel {
                     BorderFactory.createEmptyBorder(10, 12, 10, 12)
             );
 
-            // Nombre
+            String vigencia = "Permanente";
+            if (item.fechaInicio != null && !item.fechaInicio.isEmpty()) {
+                vigencia = item.fechaInicio + (item.fechaFin != null ? " - " + item.fechaFin : "");
+            }
+
             g.gridx = 0; g.gridy = gridY; g.weightx = PW[0];
             panelTabla.add(mkLblCell(item.nombre, new Color(0x333333), true, COL_ALIGN[0], bgRow, cellBorder), g);
 
-            // Productos (Alineación perfecta asegurada)
             g.gridx = 1; g.gridy = gridY; g.weightx = PW[1];
             panelTabla.add(mkLblCell(item.productosStr, new Color(0x666666), false, COL_ALIGN[1], bgRow, cellBorder), g);
 
-            // Precio
             g.gridx = 2; g.gridy = gridY; g.weightx = PW[2];
-            panelTabla.add(mkLblCell(item.precio, new Color(0x333333), true, COL_ALIGN[2], bgRow, cellBorder), g);
+            panelTabla.add(mkLblCell("$" + String.format("%.2f", item.precioEspecial), new Color(0x333333), true, COL_ALIGN[2], bgRow, cellBorder), g);
 
-            // Ahorro
             g.gridx = 3; g.gridy = gridY; g.weightx = PW[3];
-            panelTabla.add(mkLblCell(item.ahorro, C_ACCENT, false, COL_ALIGN[3], bgRow, cellBorder), g);
+            panelTabla.add(mkLblCell("$" + String.format("%.2f", item.ahorroCalculado), C_ACCENT, false, COL_ALIGN[3], bgRow, cellBorder), g);
 
-            // Vigencia
             g.gridx = 4; g.gridy = gridY; g.weightx = PW[4];
-            panelTabla.add(mkLblCell(item.vigencia, new Color(0x333333), false, COL_ALIGN[4], bgRow, cellBorder), g);
+            panelTabla.add(mkLblCell(vigencia, new Color(0x333333), false, COL_ALIGN[4], bgRow, cellBorder), g);
 
-            // Estado
             g.gridx = 5; g.gridy = gridY; g.weightx = PW[5];
             panelTabla.add(buildTextoEstadoCell(item.estado, bgRow, cellBorder), g);
 
-            // Acciones
             g.gridx = 6; g.gridy = gridY; g.weightx = PW[6];
             panelTabla.add(buildAccionesCell(item, bgRow, cellBorder), g);
         }
 
-        // Espaciador para empujar las filas hacia arriba
         g.gridx = 0;
         g.gridy = combosRegistrados.size() + 1;
         g.gridwidth = COLS.length;
@@ -494,9 +556,9 @@ public class PanelCombosPromos extends JPanel {
     }
 
     private JLabel buildTextoEstadoCell(String estado, Color bg, Border border) {
-        boolean activo = estado.equalsIgnoreCase("Activo") || estado.equalsIgnoreCase("Temporal");
-        JLabel l = new JLabel(estado, SwingConstants.CENTER);
-        l.setFont(new Font("Arial", Font.PLAIN, 13));
+        boolean activo = estado != null && (estado.equalsIgnoreCase("activo") || estado.equalsIgnoreCase("temporal"));
+        JLabel l = new JLabel(estado != null ? estado.toUpperCase() : "DESCONOCIDO", SwingConstants.CENTER);
+        l.setFont(new Font("Arial", Font.BOLD, 12));
         l.setForeground(activo ? C_ACT_TEXT : C_PAU_TEXT);
         l.setOpaque(true);
         l.setBackground(bg);
@@ -535,80 +597,212 @@ public class PanelCombosPromos extends JPanel {
     }
 
     // ═══════════════════════════════════════════════
-    // DIÁLOGOS Y LÓGICA DE ACCIONES
+    // CONEXIÓN CON BACKEND LARAVEL
     // ═══════════════════════════════════════════════
+
+    private void cargarProductosDesdeApi() {
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() throws Exception {
+                return apiClient.obtenerProductos();
+            }
+
+            @Override protected void done() {
+                try {
+                    String res = get();
+                    // IMPRIMIR EN CONSOLA PARA VER LA RESPUESTA REAL DE LARAVEL
+                    System.out.println(">>> RESPUESTA PRODUCTOS DE LARAVEL: " + res);
+
+                    if (res != null && !res.trim().isEmpty()) {
+                        res = res.trim();
+                        JSONArray jsonArray = null;
+
+                        if (res.startsWith("[")) {
+                            // Viene directamente como lista JSON [...]
+                            jsonArray = new JSONArray(res);
+                        } else if (res.startsWith("{")) {
+                            // Viene envuelto en un objeto JSON {...}
+                            JSONObject jsonObj = new JSONObject(res);
+                            if (jsonObj.has("data")) {
+                                jsonArray = jsonObj.getJSONArray("data");
+                            } else if (jsonObj.has("message")) {
+                                System.err.println("⚠️ Mensaje del Servidor: " + jsonObj.getString("message"));
+                                return;
+                            }
+                        } else {
+                            System.err.println("⚠️ La respuesta del backend no es un JSON válido.");
+                            return;
+                        }
+
+                        if (jsonArray != null) {
+                            productosDisponibles.clear();
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject obj = jsonArray.getJSONObject(i);
+                                Producto p = new Producto(
+                                        obj.getInt("id"),
+                                        obj.optString("name", obj.optString("nombre")),
+                                        obj.optString("category", obj.optString("categoria", "")),
+                                        obj.optDouble("price", obj.optDouble("precio", 0.0)),
+                                        obj.optString("status", obj.optString("estado", "Activo"))
+                                );
+                                productosDisponibles.add(p);
+                            }
+                            poblarListaProductos();
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar productos: " + e.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void cargarCombosDesdeApi() {
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() throws Exception {
+                return apiClient.obtenerCombos();
+            }
+
+            @Override protected void done() {
+                try {
+                    String res = get();
+                    System.out.println(">>> RESPUESTA COMBOS DE LARAVEL: " + res);
+
+                    if (res != null && !res.trim().isEmpty()) {
+                        res = res.trim();
+                        JSONArray jsonArray = null;
+
+                        if (res.startsWith("[")) {
+                            jsonArray = new JSONArray(res);
+                        } else if (res.startsWith("{")) {
+                            JSONObject jsonObj = new JSONObject(res);
+                            if (jsonObj.has("data")) {
+                                jsonArray = jsonObj.getJSONArray("data");
+                            } else if (jsonObj.has("message")) {
+                                System.err.println("⚠️ Mensaje del Servidor Combos: " + jsonObj.getString("message"));
+                                return;
+                            }
+                        }
+
+                        if (jsonArray != null) {
+                            combosRegistrados.clear();
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject obj = jsonArray.getJSONObject(i);
+
+                                StringBuilder prodsSb = new StringBuilder();
+                                double totalIndiv = 0.0;
+
+                                JSONArray prodsArray = obj.optJSONArray("productos");
+                                if (prodsArray == null) {
+                                    prodsArray = obj.optJSONArray("products");
+                                }
+
+                                if (prodsArray != null) {
+                                    for (int j = 0; j < prodsArray.length(); j++) {
+                                        JSONObject pObj = prodsArray.getJSONObject(j);
+                                        String nombreP = pObj.optString("name", pObj.optString("nombre"));
+                                        double precioP = pObj.optDouble("price", pObj.optDouble("precio"));
+
+                                        JSONObject pivot = pObj.optJSONObject("pivot");
+                                        int cantidad = pivot != null ? pivot.optInt("cantidad", 1) : 1;
+
+                                        totalIndiv += (precioP * cantidad);
+                                        prodsSb.append(cantidad > 1 ? "x" + cantidad + " " : "").append(nombreP);
+                                        if (j < prodsArray.length() - 1) prodsSb.append(" · ");
+                                    }
+                                }
+
+                                double precioEspecial = obj.optDouble("precio_especial", obj.optDouble("precio", 0.0));
+                                double ahorro = Math.max(0, totalIndiv - precioEspecial);
+
+                                ComboItem combo = new ComboItem(
+                                        obj.getInt("id"),
+                                        obj.optString("nombre", obj.optString("name")),
+                                        prodsSb.toString(),
+                                        precioEspecial,
+                                        ahorro,
+                                        obj.optString("fecha_inicio", null),
+                                        obj.optString("fecha_fin", null),
+                                        obj.optString("estado", "activo")
+                                );
+                                combosRegistrados.add(combo);
+                            }
+                            poblarTablaCombos();
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar combos: " + e.getMessage());
+                }
+            }
+        }.execute();
+    }
+
     private void onCrearCombo() {
         String nom = txtNombreCombo.getText().trim();
         String pre = txtPrecioEspecial.getText().trim();
         String fIni = txtFechaInicio.getText().trim();
         String fFin = txtFechaFin.getText().trim();
 
-        // ── Validar nombre ──
         if (nom.isEmpty() || nom.equals("Nombre del combo")) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo agregar: debes ingresar el nombre del combo.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Ingresa el nombre del combo.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar que el precio no esté vacío ──
         if (pre.isEmpty() || pre.equals("Precio especial ($)")) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo agregar: debes ingresar el precio especial del combo.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Ingresa el precio especial del combo.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar que haya al menos un producto en el carrito ──
         if (carritoCombo.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo agregar: selecciona al menos un producto para el combo.",
-                    "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecciona al menos un producto.", "Campo requerido", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // ── Validar que el precio sea un número válido ──
-        String preLimpio = pre.replaceAll("[^0-9.]", "");
         double comboP;
         try {
-            if (preLimpio.isEmpty()) throw new NumberFormatException();
-            comboP = Double.parseDouble(preLimpio);
+            comboP = Double.parseDouble(pre.replaceAll("[^0-9.]", ""));
             if (comboP <= 0) throw new NumberFormatException();
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "El precio especial debe ser un número válido mayor a cero.",
-                    "Formato inválido", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El precio especial debe ser mayor a cero.", "Formato inválido", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        StringBuilder sbProds = new StringBuilder();
-        for (int i = 0; i < carritoCombo.size(); i++) {
-            sbProds.append(carritoCombo.get(i).nombre);
-            if (i < carritoCombo.size() - 1) sbProds.append(" · ");
+        JSONObject jsonPayload = new JSONObject();
+        jsonPayload.put("nombre", nom);
+        jsonPayload.put("precio_especial", comboP);
+        jsonPayload.put("estado", "activo");
+
+        if (!fIni.isEmpty() && !fIni.contains("YYYY")) jsonPayload.put("fecha_inicio", fIni);
+        if (!fFin.isEmpty() && !fFin.contains("YYYY")) jsonPayload.put("fecha_fin", fFin);
+
+        JSONArray prodsArr = new JSONArray();
+        for (CarritoItem item : carritoCombo) {
+            JSONObject pObj = new JSONObject();
+            pObj.put("producto_id", item.producto.getId());
+            pObj.put("cantidad", item.cantidad);
+            prodsArr.put(pObj);
         }
+        jsonPayload.put("productos", prodsArr);
 
-        double ind = 0;
-        for (ProductoItem p : carritoCombo) ind += p.precio;
-        double ahorro = Math.max(0, ind - comboP);
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() throws Exception {
+                return apiClient.crearCombo(jsonPayload.toString());
+            }
 
-        String vigencia = "Permanente";
-        String estado = "Activo";
-        if (!fIni.isEmpty() && !fIni.equals("Fecha inicio")) {
-            vigencia = fIni + (fFin.isEmpty() || fFin.equals("Fecha fin (vacío = permanente)") ? "" : " - " + fFin);
-            estado = "Temporal";
-        }
-
-        combosRegistrados.add(new ComboItem(
-                String.format("#C%03d", combosRegistrados.size() + 1),
-                nom, sbProds.toString(), "$" + String.format("%.2f", comboP),
-                "$" + String.format("%.2f", ahorro), vigencia, estado));
-
-        poblarTablaCombos();
-        limpiarFormulario();
-
-        JOptionPane.showMessageDialog(this,
-                "Combo \"" + nom + "\" agregado correctamente.",
-                "Combo creado", JOptionPane.INFORMATION_MESSAGE);
+            @Override protected void done() {
+                try {
+                    String res = get();
+                    if (res != null && !res.contains("\"error\"")) {
+                        JOptionPane.showMessageDialog(PanelCombosPromos.this, "Combo creado con éxito", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                        limpiarFormulario();
+                        cargarCombosDesdeApi();
+                    } else {
+                        JOptionPane.showMessageDialog(PanelCombosPromos.this, "Error del servidor: " + res, "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(PanelCombosPromos.this, "Error de red al conectar con el API", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private void onEditarCombo(ComboItem item) {
@@ -624,134 +818,73 @@ public class PanelCombosPromos extends JPanel {
         g.insets = new Insets(6, 0, 6, 0);
         g.weightx = 1.0; g.gridx = 0;
 
-        JLabel lblTitulo = new JLabel("Editar Combo");
+        JLabel lblTitulo = new JLabel("Editar Combo #" + item.id);
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
         lblTitulo.setForeground(C_ACCENT);
         g.gridy = 0; p.add(lblTitulo, g);
 
-        // Nombre
         g.gridy++; p.add(mkLabelForm("Nombre del combo:"), g);
         JTextField txtEditNom = new JTextField(item.nombre);
         styleCampoDialog(txtEditNom);
         g.gridy++; p.add(txtEditNom, g);
 
-        // Productos
-        g.gridy++; p.add(mkLabelForm("Productos incluidos:"), g);
-        JTextField txtEditProds = new JTextField(item.productosStr);
-        styleCampoDialog(txtEditProds);
-        g.gridy++; p.add(txtEditProds, g);
-
-        // Precio
         g.gridy++; p.add(mkLabelForm("Precio combo ($):"), g);
-        JTextField txtEditPrecio = new JTextField(item.precio.replace("$", "").trim());
+        JTextField txtEditPrecio = new JTextField(String.valueOf(item.precioEspecial));
         styleCampoDialog(txtEditPrecio);
         g.gridy++; p.add(txtEditPrecio, g);
 
-        // Vigencia
-        g.gridy++; p.add(mkLabelForm("Vigencia:"), g);
-        JTextField txtEditVig = new JTextField(item.vigencia);
-        styleCampoDialog(txtEditVig);
-        g.gridy++; p.add(txtEditVig, g);
-
-        // Estado
         g.gridy++; p.add(mkLabelForm("Estado:"), g);
-        JComboBox<String> cmbEditEst = new JComboBox<>(new String[]{"Activo", "Temporal", "Pausado"});
+        JComboBox<String> cmbEditEst = new JComboBox<>(new String[]{"activo", "pausado"});
         cmbEditEst.setSelectedItem(item.estado);
         cmbEditEst.setFont(new Font("Arial", Font.PLAIN, 14));
         cmbEditEst.setBackground(C_CAMPO_BG);
         g.gridy++; p.add(cmbEditEst, g);
 
-        // Botones
         JPanel panelBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelBtns.setOpaque(false);
 
-        JButton btnCancelar = new JButton("Cancelar");
-        btnCancelar.setFont(new Font("Arial", Font.BOLD, 12));
-        btnCancelar.setContentAreaFilled(false);
-        btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton btnCancelar = buildBoton("Cancelar");
+        btnCancelar.setPreferredSize(new Dimension(110, 38));
         btnCancelar.addActionListener(e -> dialog.dispose());
 
-        JButton btnGuardar = new JButton("Guardar Cambios") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(C_BTN_DARK);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.setColor(C_WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(getText(), (getWidth() - fm.stringWidth(getText())) / 2, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
-            }
-        };
-        btnGuardar.setFont(new Font("Arial", Font.BOLD, 12));
-        btnGuardar.setContentAreaFilled(false); btnGuardar.setBorderPainted(false); btnGuardar.setFocusPainted(false);
-        btnGuardar.setPreferredSize(new Dimension(140, 36));
-        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
+        JButton btnGuardar = buildBoton("Guardar Cambios");
+        btnGuardar.setPreferredSize(new Dimension(160, 38));
         btnGuardar.addActionListener(e -> {
             String nom = txtEditNom.getText().trim();
-            String prods = txtEditProds.getText().trim();
             String pre = txtEditPrecio.getText().trim();
-            String vig = txtEditVig.getText().trim();
 
-            // ── Validar nombre ──
-            if (nom.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: el nombre del combo no puede estar vacío.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
+            if (nom.isEmpty() || pre.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Los campos no pueden estar vacíos.", "Atención", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // ── Validar productos ──
-            if (prods.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: debes indicar los productos incluidos.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            double preNum = Double.parseDouble(pre);
 
-            // ── Validar que el precio no esté vacío ──
-            if (pre.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: el precio del combo no puede estar vacío.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            JSONObject jsonPayload = new JSONObject();
+            jsonPayload.put("nombre", nom);
+            jsonPayload.put("precio_especial", preNum);
+            jsonPayload.put("estado", cmbEditEst.getSelectedItem().toString());
 
-            // ── Validar que el precio sea numérico ──
-            String preLimpio = pre.replaceAll("[^0-9.]", "");
-            double precioNum;
-            try {
-                if (preLimpio.isEmpty()) throw new NumberFormatException();
-                precioNum = Double.parseDouble(preLimpio);
-                if (precioNum <= 0) throw new NumberFormatException();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog,
-                        "El precio debe ser un número válido mayor a cero (ej. 150.00).",
-                        "Formato inválido", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            new SwingWorker<String, Void>() {
+                @Override protected String doInBackground() throws Exception {
+                    return apiClient.actualizarCombo(item.id, jsonPayload.toString());
+                }
 
-            // ── Validar vigencia ──
-            if (vig.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "No se pudo guardar: la vigencia no puede estar vacía.",
-                        "Campo requerido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            item.nombre = nom;
-            item.productosStr = prods;
-            item.precio = "$" + String.format("%.2f", precioNum);
-            item.vigencia = vig;
-            item.estado = (String) cmbEditEst.getSelectedItem();
-
-            poblarTablaCombos();
-            dialog.dispose();
-
-            JOptionPane.showMessageDialog(this,
-                    "Combo \"" + nom + "\" actualizado correctamente.",
-                    "Cambios guardados", JOptionPane.INFORMATION_MESSAGE);
+                @Override protected void done() {
+                    try {
+                        String res = get();
+                        if (res != null && !res.contains("\"error\"")) {
+                            dialog.dispose();
+                            cargarCombosDesdeApi();
+                            JOptionPane.showMessageDialog(PanelCombosPromos.this, "Combo actualizado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(dialog, "Error: " + res, "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(dialog, "Error de red", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }.execute();
         });
 
         panelBtns.add(btnCancelar);
@@ -769,14 +902,31 @@ public class PanelCombosPromos extends JPanel {
 
     private void onEliminarCombo(ComboItem item) {
         int ok = JOptionPane.showConfirmDialog(this, "¿Eliminar \"" + item.nombre + "\"?","Confirmar", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (ok == JOptionPane.YES_OPTION) { combosRegistrados.remove(item); poblarTablaCombos(); }
+        if (ok == JOptionPane.YES_OPTION) {
+            new SwingWorker<Boolean, Void>() {
+                @Override protected Boolean doInBackground() throws Exception {
+                    return apiClient.eliminarCombo(item.id);
+                }
+
+                @Override protected void done() {
+                    try {
+                        if (get()) {
+                            cargarCombosDesdeApi();
+                            JOptionPane.showMessageDialog(PanelCombosPromos.this, "Combo eliminado.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(PanelCombosPromos.this, "Error al eliminar combo.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }.execute();
+        }
     }
 
     private void limpiarFormulario() {
         txtNombreCombo.setText("Nombre del combo"); txtNombreCombo.setForeground(new Color(0xAAAAAA));
         txtPrecioEspecial.setText("Precio especial ($)"); txtPrecioEspecial.setForeground(new Color(0xAAAAAA));
-        txtFechaInicio.setText("Fecha inicio"); txtFechaInicio.setForeground(new Color(0xAAAAAA));
-        txtFechaFin.setText("Fecha fin (vacío = permanente)"); txtFechaFin.setForeground(new Color(0xAAAAAA));
+        txtFechaInicio.setText("Fecha inicio (YYYY-MM-DD)"); txtFechaInicio.setForeground(new Color(0xAAAAAA));
+        txtFechaFin.setText("Fecha fin (YYYY-MM-DD)"); txtFechaFin.setForeground(new Color(0xAAAAAA));
         carritoCombo.clear();
         poblarListaProductos();
         poblarCarritoUI();
@@ -825,6 +975,31 @@ public class PanelCombosPromos extends JPanel {
         return wrap;
     }
 
+    private JButton buildBoton(String texto) {
+        JButton btn = new JButton(texto) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(C_BTN_DARK);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.setColor(C_WHITE);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(getText(),
+                        (getWidth() - fm.stringWidth(getText())) / 2,
+                        (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+            }
+        };
+        btn.setFont(new Font("Arial", Font.BOLD, 13));
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
     private JLabel mkLabelForm(String text) {
         JLabel l = new JLabel(text);
         l.setFont(new Font("Arial", Font.BOLD, 12));
@@ -840,19 +1015,4 @@ public class PanelCombosPromos extends JPanel {
                 BorderFactory.createEmptyBorder(6, 8, 6, 8)));
     }
 
-    private void inicializarDatosDummy() {
-        productosDisponibles.add(new ProductoItem("#001", "Enchiladas verdes", 85.00));
-        productosDisponibles.add(new ProductoItem("#002", "Pozole rojo", 95.00));
-        productosDisponibles.add(new ProductoItem("#003", "Agua de Jamaica", 20.00));
-        productosDisponibles.add(new ProductoItem("#004", "Caldo de res", 90.00));
-        productosDisponibles.add(new ProductoItem("#005", "Tostadas de pata", 45.00));
-        productosDisponibles.add(new ProductoItem("#006", "Sopa de lima", 55.00));
-        productosDisponibles.add(new ProductoItem("#007", "Flautas de pollo", 70.00));
-        productosDisponibles.add(new ProductoItem("#008", "Refresco 600ml", 25.00));
-
-        combosRegistrados.add(new ComboItem("#C001", "Combo familiar", "Enchiladas · Pozole · ×2 Jamaica", "$210.00", "$45.00", "Permanente", "Activo"));
-        combosRegistrados.add(new ComboItem("#C002", "Promo fin de semana", "Caldo · ×2 Tostadas · Bebida", "$150.00", "$30.00", "30 may – 15 jun", "Temporal"));
-        combosRegistrados.add(new ComboItem("#C003", "Menú ejecutivo", "Sopa lima · Enchiladas · Agua", "$95.00", "$20.00", "Permanente", "Activo"));
-        combosRegistrados.add(new ComboItem("#C004", "Combo pareja", "×2 Pozole · ×2 Bebida", "$140.00", "$25.00", "Permanente", "Pausado"));
-    }
 }

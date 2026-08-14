@@ -3,37 +3,36 @@ package vistas;
 import javax.swing.*;
 import java.awt.*;
 
-
+// Importamos el ApiClient
+import servicios.ApiClient;
 
 public class VentanaAdmin extends JFrame {
 
     // ─────────────────────────────────────────────
     // PALETA DE COLORES
-    // Misma paleta terracota/crema del sistema
     // ─────────────────────────────────────────────
-    private static final Color COLOR_SIDEBAR_BG     = new Color(0x7A2E10); // Terracota sidebar
-    private static final Color COLOR_SIDEBAR_ACTIVE = new Color(0x9B3D18); // Item activo
-    private static final Color COLOR_SIDEBAR_HEADER = new Color(0x5C1F08); // Encabezado sidebar
-    private static final Color COLOR_BG             = new Color(0xFBF5EC); // Crema — fondo contenido
-    private static final Color COLOR_TEXT_SIDEBAR   = new Color(0xF5DEC8); // Texto claro sidebar
-    private static final Color COLOR_NARANJA        = new Color(0xE8A060); // Naranja — detalles
+    private static final Color COLOR_SIDEBAR_BG     = new Color(0x7A2E10);
+    private static final Color COLOR_SIDEBAR_ACTIVE = new Color(0x9B3D18);
+    private static final Color COLOR_SIDEBAR_HEADER = new Color(0x5C1F08);
+    private static final Color COLOR_BG             = new Color(0xFBF5EC);
+    private static final Color COLOR_TEXT_SIDEBAR   = new Color(0xF5DEC8);
+    private static final Color COLOR_NARANJA        = new Color(0xE8A060);
 
     // ─────────────────────────────────────────────
-    // DATOS DE SESIÓN
-    // Recibidos desde Login después de autenticar.
-    // TODO (BD): cambiar a objeto Usuario con todos
-    //            los campos del ResultSet
+    // DATOS DE SESIÓN Y SERVICIOS
     // ─────────────────────────────────────────────
-    private final String usuarioNombre; // Nombre del administrador logueado
-    private final String usuarioRol;    // Rol: "Administrador"
+    private final String usuarioNombre;
+    private final String usuarioRol;
+
+    // Instancia compartida de ApiClient para los paneles que se comunican con Laravel
+    private final ApiClient apiClient = new ApiClient();
 
     // ─────────────────────────────────────────────
     // COMPONENTES PRINCIPALES
     // ─────────────────────────────────────────────
-    private CardLayout cardLayout;   // Controla qué panel se muestra
-    private JPanel     contentPanel; // Panel contenedor de todas las vistas
+    private CardLayout cardLayout;
+    private JPanel     contentPanel;
 
-    // Paneles de cada sección del menú
     private PanelGeneral       panelGeneral;
     private PanelReportes      panelReportes;
     private PanelMenuProductos panelMenuProductos;
@@ -42,7 +41,6 @@ public class VentanaAdmin extends JFrame {
     private PanelInventario    panelInventario;
     private PanelEmpleados     panelEmpleados;
 
-    // Botones del sidebar para manejar estado activo
     private JButton btnGeneral;
     private JButton btnReportes;
     private JButton btnMenu;
@@ -50,13 +48,8 @@ public class VentanaAdmin extends JFrame {
     private JButton btnCombos;
     private JButton btnInventario;
     private JButton btnEmpleados;
-    private JButton btnActivo; // Botón actualmente seleccionado
+    private JButton btnActivo;
 
-    // ─────────────────────────────────────────────
-    // CONSTRUCTOR
-    // @param usuarioNombre  Nombre del administrador
-    // @param usuarioRol     Rol: "Administrador"
-    // ─────────────────────────────────────────────
     public VentanaAdmin(String usuarioNombre, String usuarioRol) {
         this.usuarioNombre = usuarioNombre;
         this.usuarioRol    = usuarioRol;
@@ -66,37 +59,27 @@ public class VentanaAdmin extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        add(buildSidebar(),     BorderLayout.WEST);   // Sidebar fijo
-        add(buildContentArea(), BorderLayout.CENTER); // Contenido dinámico
+        add(buildSidebar(),     BorderLayout.WEST);
+        add(buildContentArea(), BorderLayout.CENTER);
 
         setVisible(true);
     }
 
-    // ═══════════════════════════════════════════════
-    // SIDEBAR
-    // Panel lateral fijo con:
-    //   - Encabezado: rol + nombre del sistema
-    //   - Menú de navegación con 7 opciones
-    //   - Pie: avatar circular + nombre + rol
-    // ═══════════════════════════════════════════════
     private JPanel buildSidebar() {
         JPanel sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(COLOR_SIDEBAR_BG);
         sidebar.setPreferredSize(new Dimension(190, 0));
 
-        // ── Encabezado del sidebar ──
         JPanel sideHeader = new JPanel();
         sideHeader.setLayout(new BoxLayout(sideHeader, BoxLayout.Y_AXIS));
         sideHeader.setBackground(COLOR_SIDEBAR_HEADER);
         sideHeader.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
 
-        // Rol del usuario (naranja para distinguir del cajero)
         JLabel lblRol = new JLabel("Administrador");
         lblRol.setFont(new Font("Arial", Font.BOLD, 16));
         lblRol.setForeground(COLOR_NARANJA);
         lblRol.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Nombre del sistema
         JLabel lblSistema = new JLabel("Restaurant OS");
         lblSistema.setFont(new Font("Arial", Font.PLAIN, 13));
         lblSistema.setForeground(COLOR_TEXT_SIDEBAR);
@@ -107,13 +90,11 @@ public class VentanaAdmin extends JFrame {
         sideHeader.add(lblSistema);
         sidebar.add(sideHeader, BorderLayout.NORTH);
 
-        // ── Menú de navegación ──
         JPanel nav = new JPanel();
         nav.setLayout(new BoxLayout(nav, BoxLayout.Y_AXIS));
         nav.setBackground(COLOR_SIDEBAR_BG);
         nav.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
 
-        // Crear botones del menú
         btnGeneral    = buildNavButton("Panel General");
         btnReportes   = buildNavButton("Reportes");
         btnMenu       = buildNavButton("Menú y Productos");
@@ -122,7 +103,6 @@ public class VentanaAdmin extends JFrame {
         btnInventario = buildNavButton("Inventario");
         btnEmpleados  = buildNavButton("Empleados");
 
-        // Asignar acción de navegación a cada botón
         btnGeneral.addActionListener(e    -> navegarA("GENERAL",    btnGeneral));
         btnReportes.addActionListener(e   -> navegarA("REPORTES",   btnReportes));
         btnMenu.addActionListener(e       -> navegarA("MENU",       btnMenu));
@@ -142,32 +122,21 @@ public class VentanaAdmin extends JFrame {
         sidebar.add(nav,               BorderLayout.CENTER);
         sidebar.add(buildUserFooter(), BorderLayout.SOUTH);
 
-        // Activar Panel General por defecto al abrir
         setNavActivo(btnGeneral);
 
         return sidebar;
     }
 
-    /**
-     * Crea un botón de navegación del sidebar con estilo uniforme.
-     * Pinta su propio fondo para mostrar el indicador izquierdo
-     * naranja cuando está activo.
-     *
-     * @param texto Texto a mostrar en el botón
-     */
     private JButton buildNavButton(String texto) {
         JButton btn = new JButton(texto) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
-                // Barra izquierda naranja si está activo
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 if (getBackground().equals(COLOR_SIDEBAR_ACTIVE)) {
                     g2.setColor(COLOR_NARANJA);
                     g2.fillRect(0, 0, 4, getHeight());
                 }
-                // Fondo del botón
                 g2.setColor(getBackground());
                 g2.fillRect(4, 0, getWidth() - 4, getHeight());
                 super.paintComponent(g);
@@ -187,40 +156,17 @@ public class VentanaAdmin extends JFrame {
         return btn;
     }
 
-    /**
-     * Cambia el botón activo en el sidebar:
-     * - Quita el resaltado del botón anterior
-     * - Aplica fondo activo y texto en negrita al nuevo
-     *
-     * @param btn Botón a activar
-     */
     private void setNavActivo(JButton btn) {
-        // Restaurar estilo del botón anterior
         if (btnActivo != null) {
             btnActivo.setBackground(COLOR_SIDEBAR_BG);
             btnActivo.setFont(new Font("Arial", Font.PLAIN, 14));
         }
-        // Aplicar estilo activo al nuevo botón
         btnActivo = btn;
         btn.setBackground(COLOR_SIDEBAR_ACTIVE);
         btn.setFont(new Font("Arial", Font.BOLD, 14));
         btn.repaint();
     }
 
-    /**
-     * Navega a la sección indicada:
-     * - Muestra la carta correspondiente en el CardLayout
-     * - Actualiza el botón activo en el sidebar
-     *
-     * @param card Nombre de la carta en el CardLayout
-     * @param btn  Botón del sidebar que se activa
-     */
-    /**
-     * Navegación pública — permite que paneles hijos
-     * (como PanelGeneral o PanelMenuProductos) puedan
-     * cambiar la sección activa.
-     * @param card Clave del CardLayout
-     */
     public void navegarA(String card) {
         switch (card) {
             case "GENERAL"    -> navegarA(card, btnGeneral);
@@ -233,34 +179,40 @@ public class VentanaAdmin extends JFrame {
         }
     }
 
-    /** Versión privada usada internamente por el sidebar */
     private void navegarA(String card, JButton btn) {
+        // 1. Cambia la pantalla visible y marca el botón activo
         cardLayout.show(contentPanel, card);
         setNavActivo(btn);
+
+        // 2. Identifica qué panel se acaba de mostrar
+        JPanel panelActual = switch (card) {
+            case "GENERAL"    -> panelGeneral;
+            case "REPORTES"   -> panelReportes;
+            case "MENU"       -> panelMenuProductos;
+            case "RECETAS"    -> panelRecetas;
+            case "COMBOS"     -> panelCombosPromos;
+            case "INVENTARIO" -> panelInventario;
+            case "EMPLEADOS"  -> panelEmpleados;
+            default           -> null;
+        };
+
+        // 3. Si el panel implementa 'Actualizables', le pide datos frescos al servidor
+        if (panelActual instanceof Actualizables) {
+            ((Actualizables) panelActual).recargarDatos();
+        }
     }
 
-    /**
-     * Pie del sidebar: avatar circular con inicial del nombre,
-     * nombre del usuario y su rol.
-     *
-     * TODO (BD): usar nombre real del objeto Usuario
-     *            obtenido en el login
-     */
     private JPanel buildUserFooter() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 14));
         panel.setBackground(COLOR_SIDEBAR_HEADER);
 
-        // Avatar circular con la inicial del nombre
         JPanel avatar = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
-                // Círculo naranja
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(COLOR_NARANJA);
                 g2.fillOval(0, 0, getWidth(), getHeight());
-                // Inicial del nombre en blanco
                 g2.setColor(Color.WHITE);
                 g2.setFont(new Font("Arial", Font.BOLD, 16));
                 FontMetrics fm = g2.getFontMetrics();
@@ -273,12 +225,10 @@ public class VentanaAdmin extends JFrame {
         avatar.setOpaque(false);
         avatar.setPreferredSize(new Dimension(36, 36));
 
-        // Info: nombre + rol
         JPanel info = new JPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
         info.setOpaque(false);
 
-        // Truncar nombre si supera 12 caracteres
         String nombreCorto = usuarioNombre.length() > 12
                 ? usuarioNombre.substring(0, 12) + "..."
                 : usuarioNombre;
@@ -308,10 +258,13 @@ public class VentanaAdmin extends JFrame {
         contentPanel.setBackground(COLOR_BG);
 
         // Instanciar cada panel una sola vez
-        panelGeneral       = new PanelGeneral(this); // Pasar referencia para acciones rápidas
+        panelGeneral       = new PanelGeneral(this);
         panelReportes      = new PanelReportes();
         panelMenuProductos = new PanelMenuProductos();
-        panelRecetas       = new PanelRecetas();
+
+        // AQUÍ ESTABA EL DETALLE: Pasamos la instancia de apiClient
+        panelRecetas       = new PanelRecetas(apiClient);
+
         panelCombosPromos  = new PanelCombosPromos();
         panelInventario    = new PanelInventario();
         panelEmpleados     = new PanelEmpleados();
@@ -325,11 +278,8 @@ public class VentanaAdmin extends JFrame {
         contentPanel.add(panelInventario,    "INVENTARIO");
         contentPanel.add(panelEmpleados,     "EMPLEADOS");
 
-        // Conectar el botón "+ Agregar Receta" de Menú y Productos
-        // para que navegue directo al apartado de Recetas
         panelMenuProductos.setListenerNavegarRecetas(() -> navegarA("RECETAS"));
 
-        // Mostrar Panel General al abrir
         cardLayout.show(contentPanel, "GENERAL");
         return contentPanel;
     }
