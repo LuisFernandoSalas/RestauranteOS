@@ -99,13 +99,15 @@ public class MainActivity extends AppCompatActivity {
 
                         if (userRole.equalsIgnoreCase("cocinero")) {
                             // ✅ EL ROL ES CORRECTO, LO DEJAMOS PASAR
+                            String nombreCompleto = loginResponse.getUser().getName(); // Obtiene el nombre devuelto por la API
                             Log.d(TAG, "onResponse: ¡Login exitoso! Token: " + loginResponse.getAccessToken());
-                            Toast.makeText(MainActivity.this, "Bienvenido " + loginResponse.getUser().getName(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Bienvenido " + nombreCompleto, Toast.LENGTH_SHORT).show();
 
-                            // Guardamos el token para no tener que iniciar sesión a cada rato
+                            // Guardamos el token Y el nombre del usuario
                             getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE)
                                     .edit()
                                     .putString("AUTH_TOKEN", loginResponse.getAccessToken())
+                                    .putString("USER_NAME", "Chef " + nombreCompleto) // <-- ¡AQUÍ GUARDAMOS EL NOMBRE!
                                     .apply();
 
                             // Saltamos a la pantalla de pedidos

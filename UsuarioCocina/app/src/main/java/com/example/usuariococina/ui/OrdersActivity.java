@@ -21,7 +21,8 @@ import com.example.usuariococina.adapters.OrdersAdapter;
 import com.example.usuariococina.api.apiClient;
 import com.example.usuariococina.api.apiService;
 import com.example.usuariococina.R;
-import com.google.gson.Gson; // <-- Asegúrate de tener esto para enviar el pedido como JSON
+import com.google.gson.Gson;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,14 +54,33 @@ public class OrdersActivity extends AppCompatActivity {
 
         rvOrders = findViewById(R.id.rvOrders);
 
-        // (ELIMINAMOS LOS FINDVIEWBYID DE LOS TEXTVIEWS PORQUE ESTÁN EN LA OTRA PANTALLA)
+        // 1. OBTENER Y MOSTRAR EL NOMBRE DEL USUARIO LOGUEADO
+        SharedPreferences prefs = getSharedPreferences("CocinaAppPrefs", MODE_PRIVATE);
+        String nombreUsuario = prefs.getString("USER_NAME", "Chef"); // Clave guardada en el Login
+
+        TextView tvNombreChef = findViewById(R.id.tvNombreChef); // Cambia "tvNombreChef" por el ID real de tu XML
+        if (tvNombreChef != null) {
+            tvNombreChef.setText(nombreUsuario);
+        }
 
         int spanCount = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? 4 : 2;
         rvOrders.setLayoutManager(new GridLayoutManager(this, spanCount));
 
+        // 2. BOTÓN DE CIERRE DE SESIÓN
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
-            Log.d(TAG, "btnLogout: Intento de cerrar sesión");
-            Toast.makeText(this, "Botón de salida presionado", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "btnLogout: Cerrando sesión...");
+
+            // Borrar todo el contenido de SharedPreferences (Token, Nombre, etc.)
+            prefs.edit().clear().apply();
+
+            Toast.makeText(this, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show();
+
+            // Redirigir a la pantalla de login borrando el historial
+            Intent intent = new Intent(OrdersActivity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+            startActivity(intent);
+            finish();
         });
 
         setupAdapter();
