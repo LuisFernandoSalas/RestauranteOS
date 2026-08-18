@@ -10,7 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class apiClient {
 
-    private static final String BASE_URL = "  https://idealism-anchor-skipper.ngrok-free.dev/api/";
+    private static final String BASE_URL = "  https://satiable-parameter-synthesis.ngrok-free.dev/api/";
     private static Retrofit retrofit = null;
 
     public static Retrofit getClient(final String authToken) {

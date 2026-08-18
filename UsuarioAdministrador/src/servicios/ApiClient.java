@@ -18,7 +18,7 @@ import java.time.Duration;
  */
 public class ApiClient {
 
-    private static final String BASE_URL = "http://127.0.0.1:8000/api";
+    private static final String BASE_URL = "https://satiable-parameter-synthesis.ngrok-free.dev/api";
     private final HttpClient httpClient;
 
     public ApiClient() {

@@ -276,14 +276,19 @@ public class MesasActivity extends AppCompatActivity {
 
     private void setupDynamicUserData() {
         String nombreUsuario = getIntent().getStringExtra("usuario_nombre");
-        if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
-            TextView tvWelcomeToolbar = findViewById(R.id.tv_welcome_user_toolbar);
-            if (tvWelcomeToolbar != null) {
-                tvWelcomeToolbar.setText("Hola " + nombreUsuario + "!");
-            }
 
-            View navFooter = findViewById(R.id.nav_container_mesas);
-            if (navFooter != null) {
+        View navFooter = findViewById(R.id.nav_container_mesas);
+        if (navFooter != null) {
+            // 1. Asignar evento de clic al pie de página para cerrar sesión
+            navFooter.setOnClickListener(v -> mostrarDialogoCerrarSesion());
+
+            // 2. Si viene el nombre del usuario, actualizar textos y avatar
+            if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
+                TextView tvWelcomeToolbar = findViewById(R.id.tv_welcome_user_toolbar);
+                if (tvWelcomeToolbar != null) {
+                    tvWelcomeToolbar.setText("Hola " + nombreUsuario + "!");
+                }
+
                 TextView tvNombreFooter = navFooter.findViewById(R.id.tv_user_name_footer);
                 TextView tvAvatar = navFooter.findViewById(R.id.tv_avatar);
 
@@ -304,6 +309,21 @@ public class MesasActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    // Método para mostrar la alerta de confirmación
+    private void mostrarDialogoCerrarSesion() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("🚪 Cerrar Sesión")
+                .setMessage("¿Estás seguro de que deseas salir del sistema?")
+                .setPositiveButton("Sí, salir", (dialog, which) -> {
+                    if (drawerLayout != null) {
+                        drawerLayout.closeDrawer(GravityCompat.START);
+                    }
+                    cerrarSesion(); // Utiliza tu método existente para borrar token y redirigir
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     private void setupCloseButton() {
