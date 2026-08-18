@@ -218,6 +218,11 @@ class PedidoController extends Controller
 
         $pedido->update(['estado' => $request->estado]);
 
+        // Si el pedido cambia a estado cobro, también actualizamos el estado de la mesa física
+        if ($request->estado === 'cobro') {
+            $pedido->mesa()->update(['estado' => 'cobro']);
+        }
+
         broadcast(new \App\Events\PedidoActualizado($pedido))->toOthers();
 
         return response()->json([

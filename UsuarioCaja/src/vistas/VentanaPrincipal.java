@@ -29,11 +29,11 @@ public class VentanaPrincipal extends JFrame {
     // ─────────────────────────────────────────────
     // PALETA DE COLORES
     // ─────────────────────────────────────────────
-    private static final Color COLOR_SIDEBAR_BG     = new Color(0x7A2E10);
+    private static final Color COLOR_SIDEBAR_BG = new Color(0x7A2E10);
     private static final Color COLOR_SIDEBAR_ACTIVE = new Color(0x9B3D18);
     private static final Color COLOR_SIDEBAR_HEADER = new Color(0x5C1F08);
-    private static final Color COLOR_BG             = new Color(0xFBF5EC);
-    private static final Color COLOR_TEXT_SIDEBAR   = new Color(0xF5DEC8);
+    private static final Color COLOR_BG = new Color(0xFBF5EC);
+    private static final Color COLOR_TEXT_SIDEBAR = new Color(0xF5DEC8);
 
     // ─────────────────────────────────────────────
     // DATOS DE SESIÓN
@@ -46,13 +46,13 @@ public class VentanaPrincipal extends JFrame {
     // COMPONENTES PRINCIPALES
     // ─────────────────────────────────────────────
     private CardLayout cardLayout;
-    private JPanel     contentPanel;
+    private JPanel contentPanel;
 
     // Paneles de cada sección
-    private PanelMesas       panelMesas;
-    private PanelHistorial   panelHistorial;
-    private PanelCorteCaja   panelCorteCaja;
-    private PanelCobro       panelCobro;
+    private PanelMesas panelMesas;
+    private PanelHistorial panelHistorial;
+    private PanelCorteCaja panelCorteCaja;
+    private PanelCobro panelCobro;
 
     // Botones del menú
     private JButton btnMesas;
@@ -67,15 +67,15 @@ public class VentanaPrincipal extends JFrame {
     // ─────────────────────────────────────────────
     public VentanaPrincipal(String usuarioNombre, String usuarioRol) {
         this.usuarioNombre = usuarioNombre;
-        this.usuarioRol    = usuarioRol;
+        this.usuarioRol = usuarioRol;
 
         setTitle("RestaurantOS");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        add(buildSidebar(),      BorderLayout.WEST);
-        add(buildContentArea(),  BorderLayout.CENTER);
+        add(buildSidebar(), BorderLayout.WEST);
+        add(buildContentArea(), BorderLayout.CENTER);
 
         setVisible(true);
     }
@@ -115,20 +115,20 @@ public class VentanaPrincipal extends JFrame {
         nav.setBackground(COLOR_SIDEBAR_BG);
         nav.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
 
-        btnMesas     = buildNavButton("Mesas");
+        btnMesas = buildNavButton("Mesas");
         btnHistorial = buildNavButton("Historial");
-        btnCorte     = buildNavButton("Corte de caja");
+        btnCorte = buildNavButton("Corte de caja");
 
-        btnMesas.addActionListener(e     -> navegarA("MESAS",     btnMesas));
+        btnMesas.addActionListener(e -> navegarA("MESAS", btnMesas));
         btnHistorial.addActionListener(e -> navegarA("HISTORIAL", btnHistorial));
-        btnCorte.addActionListener(e     -> navegarA("CORTE",     btnCorte));
+        btnCorte.addActionListener(e -> navegarA("CORTE", btnCorte));
 
         nav.add(btnMesas);
         nav.add(btnHistorial);
         nav.add(btnCorte);
 
-        sidebar.add(nav,              BorderLayout.CENTER);
-        sidebar.add(buildUserFooter(),BorderLayout.SOUTH);
+        sidebar.add(nav, BorderLayout.CENTER);
+        sidebar.add(buildUserFooter(), BorderLayout.SOUTH);
 
         setNavActivo(btnMesas);
         return sidebar;
@@ -198,7 +198,7 @@ public class VentanaPrincipal extends JFrame {
                 FontMetrics fm = g2.getFontMetrics();
                 String inicial = String.valueOf(usuarioNombre.charAt(0)).toUpperCase();
                 g2.drawString(inicial,
-                        (getWidth()  - fm.stringWidth(inicial)) / 2,
+                        (getWidth() - fm.stringWidth(inicial)) / 2,
                         (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
             }
         };
@@ -234,20 +234,20 @@ public class VentanaPrincipal extends JFrame {
     // Instancia cada panel una sola vez y lo registra
     // ═══════════════════════════════════════════════
     private JPanel buildContentArea() {
-        cardLayout   = new CardLayout();
+        cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
         contentPanel.setBackground(COLOR_BG);
 
-        panelMesas      = new PanelMesas();
-        panelHistorial  = new PanelHistorial();
-        panelCorteCaja  = new PanelCorteCaja();
-        panelCobro      = new PanelCobro();
+        panelMesas = new PanelMesas();
+        panelHistorial = new PanelHistorial();
+        panelCorteCaja = new PanelCorteCaja();
+        panelCobro = new PanelCobro();
         panelCobro.setVentana(this); // Pasar referencia para poder regresar
 
-        contentPanel.add(panelMesas,     "MESAS");
+        contentPanel.add(panelMesas, "MESAS");
         contentPanel.add(panelHistorial, "HISTORIAL");
         contentPanel.add(panelCorteCaja, "CORTE");
-        contentPanel.add(panelCobro,     "COBRO_MESA");
+        contentPanel.add(panelCobro, "COBRO_MESA");
 
         cardLayout.show(contentPanel, "MESAS");
         return contentPanel;
@@ -258,21 +258,22 @@ public class VentanaPrincipal extends JFrame {
     // Llamada desde PanelCobro para regresar a mesas
     // ═══════════════════════════════════════════════
 
-    /** Regresa a PanelMesas y activa su botón en el sidebar */
+    /**
+     * Regresa a PanelMesas y activa su botón en el sidebar
+     */
     public void navegarAMesas() {
         cardLayout.show(contentPanel, "MESAS");
         setNavActivo(btnMesas);
     }
 
-    /** Abre PanelCobro cargando los datos de la mesa */
-    public void abrirCobro(Mesa mesa) {
-        panelCobro.cargarPedido(
-                mesa,
-                "Hasiel ....",          // TODO (BD): nombre real del mesero
-                45,                     // TODO (BD): minutos reales
-                PanelCobro.itemsDummy() // TODO (BD): items reales de BD
-        );
-        cardLayout.show(contentPanel, "COBRO_MESA");
-        setNavActivo(btnMesas);
+    public void abrirCobroParaMesa(int idMesa) {
+        // 1. Aquí asumo que tu PanelCobro tiene un método para cargar la cuenta de la mesa
+        // Si se llama diferente, cámbialo por el nombre de tu método real.
+        panelCobro.cargarDatosDeMesa(idMesa);
+
+        // 2. Le decimos al CardLayout que muestre el PanelCobro
+        // Asegúrate de usar los nombres exactos de tus variables (ej. panelCentral o cardPanel)
+        CardLayout cl = (CardLayout)(panelCentral.getLayout());
+        cl.show(panelCentral, "PanelCobro"); // "PanelCobro" es el nombre/String que usaste al agregarlo al layout
     }
 }

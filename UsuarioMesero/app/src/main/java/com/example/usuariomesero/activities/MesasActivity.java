@@ -144,20 +144,29 @@ public class MesasActivity extends AppCompatActivity {
             } else if (mesa.getEstado() == Mesa.Estado.OCUPADA) {
                 String estadoPedido = mesa.getEstadoPedido() != null ? mesa.getEstadoPedido() : "";
 
-                if ("listo".equalsIgnoreCase(estadoPedido)) {
+                // 1. Si el pedido ya fue enviado a cobro pero la mesa sigue marcada como ocupada
+                if ("cobro".equalsIgnoreCase(estadoPedido)) {
+                    Toast.makeText(this, "🔒 Esta mesa ya fue enviada a Caja. Espera a que cobren para liberarla.", Toast.LENGTH_LONG).show();
+                }
+                // 2. Si la cocina ya terminó el pedido
+                else if ("listo".equalsIgnoreCase(estadoPedido)) {
                     mostrarDialogoMarcarEntregado(mesa);
                 }
+                // 3. Si la cocina aún está preparando el pedido
                 else if ("en_preparacion".equalsIgnoreCase(estadoPedido) || "pendiente".equalsIgnoreCase(estadoPedido)) {
                     Toast.makeText(this, "⚠️ Cocina aún está preparando el pedido. Espera a que esté listo para entregar y cobrar.", Toast.LENGTH_LONG).show();
                 }
+                // 4. Si el pedido está entregado (y aún no se ha mandado a cobro)
                 else {
                     mostrarDialogoConfirmarCobro(mesa);
                 }
 
             } else if (mesa.getEstado() == Mesa.Estado.COBRO) {
-                Toast.makeText(MesasActivity.this, "Mesa en cobro. Funcionalidad en construcción.", Toast.LENGTH_SHORT).show();
+                // 🛑 Si el enum de la mesa ya viene como COBRO desde la API
+                Toast.makeText(MesasActivity.this, "🔒 Esta mesa ya está en proceso de cobro.", Toast.LENGTH_SHORT).show();
             }
         });
+
         rvMesas.setLayoutManager(new GridLayoutManager(this, 3));
         rvMesas.setAdapter(mesaAdapter);
     }
@@ -229,11 +238,15 @@ public class MesasActivity extends AppCompatActivity {
                         mesaAdapter.notifyDataSetChanged();
                         dialog.dismiss();
 
-                        Toast.makeText(MesasActivity.this, "Mesa bloqueada para cobro.", Toast.LENGTH_SHORT).show();
+                        // 🚀 AHORA SÍ: Abrimos la pantalla de cobro inmediatamente
+                        Intent intent = new Intent(MesasActivity.this, CobroActivity.class);
+                        intent.putExtra("mesa_numero", mesa.getNumero());
+                        intent.putExtra("pedido_id", mesa.getPedidoId());
+                        startActivity(intent);
 
                     } else {
                         btnConfirmar.setEnabled(true);
-                        Toast.makeText(MesasActivity.this, "❌ Error: Laravel rechazó el estado. Revisa las reglas de validación en el Backend.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MesasActivity.this, "❌ Error al cambiar estado a cobro.", Toast.LENGTH_LONG).show();
                     }
                 }
 

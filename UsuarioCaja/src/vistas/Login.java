@@ -1,5 +1,11 @@
 package vistas;
 
+import com.google.gson.JsonObject;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -7,16 +13,6 @@ import java.awt.event.*;
 /**
  * ═══════════════════════════════════════════════════════
  *  Vista: Login
- * ═══════════════════════════════════════════════════════
- *  Primera pantalla del sistema. Valida usuario y
- *  contraseña antes de abrir VentanaPrincipal.
- *
- *  TODO (BD): en onIngresar() reemplazar la validación
- *  local por consulta a la tabla `usuarios`:
- *    SELECT id_usuario, nombre, rol
- *    FROM usuarios
- *    WHERE (correo = ? OR usuario = ?)
- *      AND contrasena = SHA2(?, 256);
  * ═══════════════════════════════════════════════════════
  */
 public class Login extends JFrame {
@@ -80,7 +76,6 @@ public class Login extends JFrame {
         gbc.gridx = 0;
         gbc.fill  = GridBagConstraints.HORIZONTAL;
 
-        // Título
         JLabel lblBienvenido = new JLabel("Bienvenido", SwingConstants.CENTER);
         lblBienvenido.setFont(new Font("Arial", Font.BOLD, 42));
         lblBienvenido.setForeground(COLOR_ACCENT);
@@ -88,7 +83,6 @@ public class Login extends JFrame {
         gbc.insets = new Insets(0, 0, 6, 0);
         panel.add(lblBienvenido, gbc);
 
-        // Subtítulo
         JLabel lblSub = new JLabel("Inicia sesión para continuar", SwingConstants.CENTER);
         lblSub.setFont(new Font("Arial", Font.PLAIN, 16));
         lblSub.setForeground(COLOR_ACCENT);
@@ -96,21 +90,16 @@ public class Login extends JFrame {
         gbc.insets = new Insets(0, 0, 28, 0);
         panel.add(lblSub, gbc);
 
-        // Label usuario
         panel.add(buildLabel("Correo o usuario"), at(gbc, 2, new Insets(0, 0, 6, 0)));
 
-        // Campo usuario — mismo ancho que el botón (370px), sin círculo
         txtUsuario = new JTextField();
         panel.add(buildInputField(txtUsuario), at(gbc, 3, new Insets(0, 0, 18, 0)));
 
-        // Label contraseña
         panel.add(buildLabel("Contraseña"), at(gbc, 4, new Insets(0, 0, 6, 0)));
 
-        // Campo contraseña — mismo ancho que el botón (370px), sin círculo
         txtPassword = new JPasswordField();
         panel.add(buildInputField(txtPassword), at(gbc, 5, new Insets(0, 0, 6, 0)));
 
-        // Link olvidaste contraseña
         JLabel lblOlvido = new JLabel("¿Olvidaste tu contraseña?");
         lblOlvido.setFont(new Font("Arial", Font.PLAIN, 15));
         lblOlvido.setForeground(COLOR_LINK);
@@ -121,7 +110,6 @@ public class Login extends JFrame {
         });
         panel.add(lblOlvido, at(gbc, 6, new Insets(0, 0, 24, 0)));
 
-        // Botón ingresar
         JButton btnIngresar = buildRoundedButton("Ingresar");
         btnIngresar.addActionListener(e -> onIngresar());
         panel.add(btnIngresar, at(gbc, 7, new Insets(0, 0, 0, 0)));
@@ -145,10 +133,6 @@ public class Login extends JFrame {
         return gbc;
     }
 
-    /**
-     * Campo de entrada sin círculo, mismo ancho que el botón (370px).
-     * Fondo oscuro con esquinas redondeadas.
-     */
     private JPanel buildInputField(JTextField field) {
         field.setFont(new Font("Arial", Font.PLAIN, 15));
         field.setForeground(Color.WHITE);
@@ -160,15 +144,13 @@ public class Login extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(COLOR_INPUT_BG);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
             }
         };
         wrapper.setOpaque(false);
         wrapper.add(field, BorderLayout.CENTER);
-        // Mismo ancho y alto que el botón Ingresar
         wrapper.setPreferredSize(new Dimension(370, 52));
         wrapper.setMaximumSize(new Dimension(370, 52));
         return wrapper;
@@ -179,8 +161,7 @@ public class Login extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(COLOR_BTN);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
                 g2.setColor(Color.WHITE);
@@ -204,36 +185,105 @@ public class Login extends JFrame {
     // ─────────────────────────────────────────────
     // ACCIONES
     // ─────────────────────────────────────────────
-
-    /**
-     * Valida credenciales y abre la ventana principal.
-     *
-     * TODO (BD): reemplazar validación local por:
-     *   1. Consultar tabla `usuarios` con usuario/correo + hash contraseña
-     *   2. Obtener nombre y rol del ResultSet
-     *   3. Pasar nombre y rol al constructor de VentanaPrincipal
-     */
     private void onIngresar() {
         String usuario    = txtUsuario.getText().trim();
         String contrasena = new String(txtPassword.getPassword()).trim();
 
         if (usuario.isEmpty() || contrasena.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Por favor completa todos los campos.",
-                    "Campos requeridos",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Por favor completa todos los campos.", "Campos requeridos", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Placeholder: abrir ventana principal y cerrar login
-        dispose();
-        new VentanaPrincipal(usuario, "Cajero");
+        JsonObject loginData = new JsonObject();
+        loginData.addProperty("username", usuario);
+        loginData.addProperty("password", contrasena);
+
+        System.out.println("Intentando Login con: " + loginData.toString());
+
+        network.ApiService api = network.RetrofitClient.getClient().create(network.ApiService.class);
+
+        // PRIMERO: LLAMAMOS A LOGIN
+        api.login(loginData).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    System.out.println("RESPUESTA EXITOSA: " + response.body().toString());
+                    String token = response.body().get("access_token").getAsString();
+
+                    // Si tienes una clase TokenManager actívalo aquí:
+                    network.TokenManager.TOKEN = token;
+
+                    // SEGUNDO: ABRIR CAJA
+                    abrirTurnoCaja(token, usuario);
+                } else {
+                    try {
+                        String errorReal = response.errorBody() != null ? response.errorBody().string() : "Error desconocido";
+                        System.out.println("ERROR DEL SERVIDOR: " + errorReal);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    mostrarError("Credenciales incorrectas o usuario no encontrado.");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                System.out.println("FALLO LA CONEXIÓN:");
+                t.printStackTrace();
+                mostrarError("Error de conexión al servidor: " + t.getMessage());
+            }
+        });
     }
 
-    /**
-     * TODO (BD): abrir JDialog de recuperación de contraseña.
-     * Enviar token de recuperación por correo.
-     */
+    private void abrirTurnoCaja(String token, String usuario) {
+        network.ApiService api = network.RetrofitClient.getClient().create(network.ApiService.class);
+
+        JsonObject cajaData = new JsonObject();
+        cajaData.addProperty("monto_apertura", 500.00);
+
+        System.out.println("Intentando ABRIR CAJA en el servidor...");
+
+        api.abrirTurno("Bearer " + token, cajaData).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                System.out.println("CÓDIGO DE RESPUESTA ABRIR CAJA: " + response.code());
+
+                // TERCERO: VALIDAMOS SI LA CAJA SE ABRE BIEN (200) O YA ESTABA ABIERTA (422)
+                if (response.isSuccessful() || response.code() == 422) {
+                    if (response.isSuccessful()) {
+                        System.out.println("¡CAJA ABIERTA CON ÉXITO!");
+                    } else {
+                        System.out.println("La caja ya estaba abierta (422). Dejando pasar al cajero...");
+                    }
+
+                    // Pasamos a la ventana principal
+                    SwingUtilities.invokeLater(() -> {
+                        dispose();
+                        new VentanaPrincipal(usuario, "Cajero");
+                    });
+
+                } else {
+                    try {
+                        System.out.println("ERROR DEL SERVIDOR AL ABRIR CAJA: " + response.errorBody().string());
+                    } catch (Exception e) {}
+                    mostrarError("No se pudo iniciar el turno de caja. Código: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                System.out.println("FALLÓ LA CONEXIÓN DE CAJA: " + t.getMessage());
+                mostrarError("Error de red al intentar abrir la caja.");
+            }
+        });
+    }
+
+    private void mostrarError(String mensaje) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(Login.this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
+        });
+    }
+
     private void onOlvidasteContrasena() {
         JOptionPane.showMessageDialog(this,
                 "Funcionalidad de recuperación próximamente.",
@@ -241,9 +291,6 @@ public class Login extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ─────────────────────────────────────────────
-    // PUNTO DE ENTRADA
-    // ─────────────────────────────────────────────
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Login::new);
     }

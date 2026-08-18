@@ -5,7 +5,9 @@ import com.example.usuariomesero.R;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -20,13 +22,16 @@ import com.example.usuariomesero.models.ItemOrden;
 import com.example.usuariomesero.adapters.OrdenAdapter;
 import com.example.usuariomesero.models.Mesa;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Pantalla de Cobro: (Cascarón visual - Lógica de API pendiente)
- */
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Response;
+
 public class CobroActivity extends AppCompatActivity {
 
     private int mesaNumero;
@@ -36,9 +41,14 @@ public class CobroActivity extends AppCompatActivity {
     private double totalACobrar = 0.0;
     private String metodoSeleccionado = "Efectivo";
 
+    private com.example.usuariomesero.utils.SesionManager sesionManager;
+    private static final String TAG = "CobroActivity";
+
     private TextView tvPropinaPorcentaje, tvPropinaMonto, tvTotalACobrarResumen, tvPagoCambio, btnCobrarFinal, tvSubtotal;
     private EditText etPagoRecibido;
     private View btnEfectivo, btnTarjeta, btnMixto;
+    private CheckBox cbSolicitarTicket, cbSolicitarFactura;
+
     private RecyclerView rvDetallePedido;
     private OrdenAdapter ordenAdapter;
     private List<ItemOrden> itemsPedido = new ArrayList<>();
@@ -48,18 +58,17 @@ public class CobroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cobro);
 
+        sesionManager = new com.example.usuariomesero.utils.SesionManager(this);
+
         mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
         pedidoId = getIntent().getIntExtra("pedido_id", 1);
 
-        // Inicializar vistas del frontend
         initViews();
-
-        // Configurar valores iniciales
         updateTotals();
         selectMetodo("Efectivo");
-
-        // Listeners
         setupListeners();
+
+        obtenerDetalleDelPedido();
     }
 
     private void initViews() {
@@ -69,7 +78,6 @@ public class CobroActivity extends AppCompatActivity {
         }
 
         Mesa mesa = getIntent().getParcelableExtra("mesa");
-
         TextView tvMesaInfo = findViewById(R.id.tv_mesa_info_header);
 
         if (tvMesaInfo != null && mesa != null) {
@@ -81,10 +89,7 @@ public class CobroActivity extends AppCompatActivity {
             tvMesaInfo.setText(String.format(Locale.getDefault(), "Mesa %d — %s", numeroMesa, info));
         }
 
-        tvSubtotal = findViewById(R.id.tv_subtotal_cobro);
-        if (tvSubtotal != null) {
-            tvSubtotal.setText(String.format(Locale.getDefault(), "$%.2f", totalPedido));
-        }
+        tvSubtotal = findViewById(R.id.tv_subtotal_cobro); // El total de abajo a la izquierda ($410)
 
         rvDetallePedido = findViewById(R.id.rv_detalle_pedido_cobro);
         if (rvDetallePedido != null) {
@@ -103,6 +108,10 @@ public class CobroActivity extends AppCompatActivity {
         tvPagoCambio = findViewById(R.id.tv_pago_cambio);
         btnCobrarFinal = findViewById(R.id.btn_cobrar_final);
         etPagoRecibido = findViewById(R.id.et_pago_recibido);
+
+        // Referenciar los CheckBoxes (Asegúrate de que los IDs coincidan con tu XML)
+        cbSolicitarTicket = findViewById(R.id.cb_solicitar_ticket);
+        cbSolicitarFactura = findViewById(R.id.cb_solicitar_factura);
 
         findViewById(R.id.btn_back_cobro).setOnClickListener(v -> finish());
     }
@@ -138,9 +147,7 @@ public class CobroActivity extends AppCompatActivity {
         }
 
         if (btnCobrarFinal != null) {
-            btnCobrarFinal.setOnClickListener(v -> {
-                Toast.makeText(this, "Funcionalidad de cobro pendiente de conectar a API", Toast.LENGTH_SHORT).show();
-            });
+            btnCobrarFinal.setOnClickListener(v -> mostrarPopupConfirmacion());
         }
     }
 
@@ -252,12 +259,134 @@ public class CobroActivity extends AppCompatActivity {
     }
 
     private double getPagoRecibido() {
-        String s = etPagoRecibido.getText().toString();
+        String s = "";
+        if (etPagoRecibido != null) s = etPagoRecibido.getText().toString();
         if (s.isEmpty()) return 0;
         try {
             return Double.parseDouble(s);
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private void obtenerDetalleDelPedido() {
+        String token = sesionManager.getAuthToken();
+        if (token == null) return;
+
+        com.example.usuariomesero.network.ApiService apiService =
+                com.example.usuariomesero.network.RetrofitClient.getClient(token)
+                        .create(com.example.usuariomesero.network.ApiService.class);
+
+        apiService.obtenerDetallePedidoParaCobro("Bearer " + token, pedidoId)
+                .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            try {
+                                String jsonString = response.body().string();
+                                JSONObject jsonObject = new JSONObject(jsonString);
+
+                                CobroActivity.this.totalPedido = jsonObject.getDouble("total_pedido");
+
+                                runOnUiThread(() -> {
+                                    if (tvSubtotal != null) {
+                                        tvSubtotal.setText(String.format(Locale.getDefault(), "$%.2f", CobroActivity.this.totalPedido));
+                                    }
+                                    updateTotals();
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    @Override
+                    public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {}
+                });
+    }
+
+    private void mostrarPopupConfirmacion() {
+        double recibido = getPagoRecibido();
+
+        if (recibido < totalACobrar) {
+            Toast.makeText(this, "El pago recibido es menor al total a cobrar", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String mensaje = String.format(Locale.getDefault(),
+                "¿Estás seguro de procesar el cobro?\n\nMétodo: %s\nTotal: $%.2f\nRecibido: $%.2f",
+                metodoSeleccionado, totalACobrar, recibido);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Confirmar Cobro")
+                .setMessage(mensaje)
+                .setPositiveButton("Cobrar", (dialog, which) -> enviarCobroAlServidor())
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void enviarCobroAlServidor() {
+        String token = sesionManager.getAuthToken();
+        if (token == null) return;
+
+        double recibido = getPagoRecibido();
+        double cambio = recibido - totalACobrar;
+        if (cambio < 0) cambio = 0;
+
+        boolean solicitarTicket = cbSolicitarTicket != null && cbSolicitarTicket.isChecked();
+        boolean solicitarFactura = cbSolicitarFactura != null && cbSolicitarFactura.isChecked();
+
+        // 🚀 ARMAMOS EL JSON CON TODA LA INFO PARA CAJA
+        com.google.gson.JsonObject jsonBody = new com.google.gson.JsonObject();
+
+        // ¡SUPER IMPORTANTE! Esto le avisa a caja que la mesa está lista para cobrarse
+        jsonBody.addProperty("estado", "cobro");
+
+        jsonBody.addProperty("metodo_pago", metodoSeleccionado.toLowerCase());
+        jsonBody.addProperty("subtotal", totalPedido);
+        jsonBody.addProperty("propina", propinaMonto);
+        jsonBody.addProperty("total", totalACobrar);  // Total con propina
+        jsonBody.addProperty("pago_recibido", recibido);
+        jsonBody.addProperty("cambio", cambio);
+        jsonBody.addProperty("requiere_factura", solicitarFactura ? 1 : 0);
+
+        if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(false);
+
+        com.example.usuariomesero.network.ApiService apiService =
+                com.example.usuariomesero.network.RetrofitClient.getClient(token)
+                        .create(com.example.usuariomesero.network.ApiService.class);
+
+        // LLAMAMOS AL NUEVO PUT EN LUGAR DEL POST DE COBRAR
+        apiService.solicitarCobroPedido("Bearer " + token, pedidoId, jsonBody)
+                .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
+                        if (response.isSuccessful()) {
+                            runOnUiThread(() -> {
+                                new AlertDialog.Builder(CobroActivity.this)
+                                        .setTitle("¡Caja Notificada!")
+                                        .setMessage("Se enviaron los datos. Pasa a caja para finalizar el cobro.")
+                                        .setCancelable(false)
+                                        .setPositiveButton("Aceptar", (dialog, which) -> {
+                                            setResult(RESULT_OK);
+                                            finish();
+                                        })
+                                        .show();
+                            });
+                        } else {
+                            runOnUiThread(() -> {
+                                if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(true);
+                                Toast.makeText(CobroActivity.this, "Error al notificar a caja", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {
+                        runOnUiThread(() -> {
+                            if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(true);
+                            Toast.makeText(CobroActivity.this, "Error de red", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
     }
 }

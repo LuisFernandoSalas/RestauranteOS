@@ -48,12 +48,12 @@ public class PanelMesas extends JPanel {
     // ─────────────────────────────────────────────
     // CONSTRUCTOR
     // ─────────────────────────────────────────────
-    public PanelMesas() {
+    public PanelMesas(VentanaPrincipal ventanaPrincipal) {
+        this.ventanaPrincipal = ventanaPrincipal;
         setLayout(new BorderLayout());
         setBackground(COLOR_BG);
         setBorder(BorderFactory.createEmptyBorder(28, 32, 28, 32));
 
-        inicializarMesasDummy();
         add(buildHeader(),  BorderLayout.NORTH);
         add(buildCentro(),  BorderLayout.CENTER);
 
@@ -233,43 +233,52 @@ public class PanelMesas extends JPanel {
         gridMesas.repaint();
     }
 
-    // ═══════════════════════════════════════════════
-    // DATOS DE PRUEBA
-    // TODO: eliminar y usar cargarMesasDesdeBD()
-    // ═══════════════════════════════════════════════
-    private void inicializarMesasDummy() {
-        mesas.add(new Mesa(1, EstadoMesa.LIBRE,   0,      0));
-        mesas.add(new Mesa(2, EstadoMesa.OCUPADO, 320.00, 0));
-        mesas.add(new Mesa(3, EstadoMesa.COBRO,   320.00, 0));
-        mesas.add(new Mesa(4, EstadoMesa.LIBRE,   0,      0));
-        mesas.add(new Mesa(5, EstadoMesa.LIBRE,   0,      0));
-        mesas.add(new Mesa(6, EstadoMesa.OCUPADO, 320.00, 32));
-        mesas.add(new Mesa(7, EstadoMesa.OCUPADO, 320.00, 0));
-        mesas.add(new Mesa(8, EstadoMesa.COBRO,   320.00, 0));
-        mesas.add(new Mesa(9, EstadoMesa.LIBRE,   0,      0));
+    public void obtenerMesasDelServidor() {
+        String token = network.TokenManager.TOKEN;
+        if (token == null || token.isEmpty()) return;
+
+        network.ApiService api = network.RetrofitClient.getClient().create(network.ApiService.class);
+
+        api.getMesas("Bearer " + token).enqueue(new retrofit2.Callback<com.google.gson.JsonArray>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.google.gson.JsonArray> call, retrofit2.Response<com.google.gson.JsonArray> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    com.google.gson.JsonArray mesasJson = response.body();
+                    List<Mesa> nuevasMesas = new ArrayList<>();
+
+                    for (com.google.gson.JsonElement elemento : mesasJson) {
+                        com.google.gson.JsonObject obj = elemento.getAsJsonObject();
+
+                        int id = obj.get("id").getAsInt();
+                        int numero = obj.get("numero").getAsInt();
+                        String estadoStr = obj.get("estado").getAsString(); // "libre", "ocupada", "cobro"
+                        double total = obj.has("total_actual") && !obj.get("total_actual").isJsonNull() ? obj.get("total_actual").getAsDouble() : 0.0;
+
+                        // Mapeamos el texto de Laravel a tu Enum de Java
+                        Mesa.EstadoMesa estadoEnum = Mesa.EstadoMesa.LIBRE;
+                        if (estadoStr.equalsIgnoreCase("ocupada")) estadoEnum = Mesa.EstadoMesa.OCUPADO;
+                        else if (estadoStr.equalsIgnoreCase("cobro")) estadoEnum = Mesa.EstadoMesa.COBRO;
+
+                        // Creamos la mesa con sus datos reales
+                        nuevasMesas.add(new Mesa(id, numero, estadoEnum, total, 0));
+                    }
+
+                    // Actualizamos la interfaz gráfica de Swing
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        mesas.clear();
+                        mesas.addAll(nuevasMesas);
+                        actualizarGrid(); // Este es tu método que repinta las tarjetitas
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.google.gson.JsonArray> call, Throwable t) {
+                System.out.println("Error cargando las mesas desde Laravel: " + t.getMessage());
+            }
+        });
     }
 
-    /**
-     * Carga las mesas desde la base de datos.
-     *
-     * TODO (BD): implementar con JDBC:
-     *   Connection con = DriverManager.getConnection(URL, USER, PASS);
-     *   PreparedStatement ps = con.prepareStatement(
-     *     "SELECT id_mesa, numero, estado, total, tiempo_min " +
-     *     "FROM mesas ORDER BY numero ASC");
-     *   ResultSet rs = ps.executeQuery();
-     *   List<Mesa> lista = new ArrayList<>();
-     *   while (rs.next()) {
-     *     lista.add(new Mesa(
-     *       rs.getInt("id_mesa"),
-     *       rs.getInt("numero"),
-     *       EstadoMesa.valueOf(rs.getString("estado")),
-     *       rs.getDouble("total"),
-     *       rs.getInt("tiempo_min")
-     *     ));
-     *   }
-     *   return lista;
-     */
     private List<Mesa> cargarMesasDesdeBD() {
         return new ArrayList<>(mesas); // PLACEHOLDER
     }
@@ -280,10 +289,12 @@ public class PanelMesas extends JPanel {
     //       cargarMesasDesdeBD() esté implementado
     // ═══════════════════════════════════════════════
     private void iniciarPolling() {
+        // Llama a la BD inmediatamente al abrir el panel
+        obtenerMesasDelServidor();
+
+        // Configura el temporizador para que pida actualizaciones cada 10 segundos
         Timer timer = new Timer(10_000, e -> {
-            // mesas.clear();
-            // mesas.addAll(cargarMesasDesdeBD());
-            // SwingUtilities.invokeLater(this::actualizarGrid);
+            obtenerMesasDelServidor();
         });
         timer.setRepeats(true);
         timer.start();
@@ -297,9 +308,9 @@ public class PanelMesas extends JPanel {
         if (mesa.getEstado() == EstadoMesa.COBRO) {
             VentanaPrincipal ventana = (VentanaPrincipal)
                     SwingUtilities.getWindowAncestor(this);
-            ventana.abrirCobro(mesa);
         }
         // LIBRE y OCUPADO: sin acción por ahora
         // TODO: LIBRE → asignar mesa, OCUPADO → ver pedido activo
     }
+
 }

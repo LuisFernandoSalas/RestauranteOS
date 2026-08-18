@@ -31,20 +31,33 @@ class CajaController extends Controller
      * Obtener el detalle completo del pedido para el módulo de cobro
      */
     public function obtenerDetalleCobro($id)
-    {
-        $pedido = Pedido::with(['detalles.producto', 'pagos', 'mesa'])->findOrFail($id);
-        
-        $totalPagado = (float) $pedido->pagos->sum('monto_recibido');
-        $saldoPendiente = (float) max(0, $pedido->total - $totalPagado);
+{
+    // 1. Buscamos el pedido con sus detalles y pagos
+    $pedido = Pedido::with(['detalles.producto', 'pagos', 'mesa'])->findOrFail($id);
 
-        return response()->json([
-            'status'          => 'success',
-            'pedido'          => $pedido,
-            'total_pedido'    => (float) $pedido->total,
-            'total_pagado'    => $totalPagado,
-            'saldo_pendiente' => $saldoPendiente,
-        ]);
+    // 2. Calculamos los totales reales sumando las relaciones
+    $total_pedido = $pedido->detalles->sum('subtotal');
+    
+    // Asumiendo que la tabla de pagos tiene una columna 'monto' o 'cantidad'
+    $total_pagado = $pedido->pagos->sum('monto'); 
+    
+    $saldo_pendiente = $total_pedido - $total_pagado;
+
+    // 3. (OPCIONAL PERO RECOMENDADO) Si el total en la BD estaba en 0.00, lo actualizamos para que ya quede guardado
+    if ($pedido->total != $total_pedido) {
+        $pedido->total = $total_pedido;
+        $pedido->save();
     }
+
+    // 4. Retornamos la respuesta al Android con los datos correctos
+    return response()->json([
+        'status' => 'success',
+        'pedido' => $pedido,
+        'total_pedido' => $total_pedido,
+        'total_pagado' => $total_pagado,
+        'saldo_pendiente' => $saldo_pendiente
+    ]);
+}
 
     /**
      * Procesar cobro (Soporta pagos parciales, mixtos y registro en la tabla 'pagos')

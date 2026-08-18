@@ -67,7 +67,13 @@ public class MesaAdapter extends RecyclerView.Adapter<MesaAdapter.MesaViewHolder
             }
         });
 
-        switch (mesa.getEstado()) {
+        // 🛡️ RED DE SEGURIDAD PARA EVITAR EL CRASH POR ESTADOS NULOS 🛡️
+        Mesa.Estado estadoMesa = mesa.getEstado();
+        if (estadoMesa == null) {
+            estadoMesa = Mesa.Estado.LIBRE; // Asignamos Libre por defecto si Laravel manda algo desconocido
+        }
+
+        switch (estadoMesa) {
             case LIBRE:
                 holder.container.setBackgroundResource(R.drawable.bg_mesa_libre);
                 holder.tvStatusPrice.setText(R.string.status_libre);
@@ -84,19 +90,19 @@ public class MesaAdapter extends RecyclerView.Adapter<MesaAdapter.MesaViewHolder
                     holder.tvStatusPrice.setText("🍽️ ¡LISTO PARA SERVIR!");
                     holder.tvStatusPrice.setTextColor(Color.parseColor("#1B5E20"));
                 }
-// 🟡 COMANDA ENTREGADA: Lista para consumo/cobro
+                // 🟡 COMANDA ENTREGADA: Lista para consumo/cobro
                 else if ("entregado".equalsIgnoreCase(estadoPed)) {
                     holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
                     holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (Entregado)", totalOcupada));
                     holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 }
-// 🔴 COBRO PENDIENTE (NUEVO CASO AGREGADO)
+                // 🔴 COBRO PENDIENTE (NUEVO CASO AGREGADO)
                 else if ("cobro".equalsIgnoreCase(estadoPed)) {
                     holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
                     holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (Cobro pendiente 💰)", totalOcupada));
                     holder.tvStatusPrice.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.terracota_oscuro));
                 }
-// 🟠 COMANDA EN COCINA (Resto de los estados como "en_preparacion" o nulos)
+                // 🟠 COMANDA EN COCINA (Resto de los estados como "en_preparacion" o nulos)
                 else {
                     holder.container.setBackgroundResource(R.drawable.bg_mesa_ocupada);
                     holder.tvStatusPrice.setText(String.format(Locale.US, "$%.2f (En cocina 👨‍🍳)", totalOcupada));

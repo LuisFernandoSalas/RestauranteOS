@@ -5,6 +5,7 @@ import com.example.usuariomesero.models.LoginRequest;
 import com.example.usuariomesero.models.LoginResponse;
 import com.example.usuariomesero.models.Mesa;
 import com.example.usuariomesero.models.ProductoResponse;
+import com.google.gson.JsonObject;
 
 import java.util.List;
 import java.util.Map;
@@ -49,4 +50,34 @@ public interface ApiService {
     @GET("productos")
     Call<ProductoResponse> getProductos(@Header("Authorization") String token);
 
+    // 🟢 1. Obtener los detalles del pedido para mostrarlos en la pantalla de cobro
+    // Usamos la ruta específica que creó José: /pedidos/{id}/detalle-cobro
+    @GET("pedidos/{id}/detalle-cobro")
+    Call<okhttp3.ResponseBody> obtenerDetallePedidoParaCobro(
+            @Header("Authorization") String token,
+            @Path("id") int pedidoId
+    );
+
+    // 🟢 2. Enviar el pago al servidor
+    @POST("pedidos/{id}/cobrar")
+    Call<okhttp3.ResponseBody> procesarCobro(
+            @Header("Authorization") String token,
+            @Path("id") int pedidoId,
+            @Body java.util.Map<String, Object> datosCobro
+    );
+
+    @POST("pedidos/{id}/cobrar") // Ajusta esta ruta a la que hayas definido en Laravel
+    Call<ResponseBody> procesarCobro(
+            @Header("Authorization") String token,
+            @Path("id") int pedidoId,
+            @Body JsonObject datosCobro
+    );
+
+    // Ruta para que el mesero actualice el pedido con los datos del cobro
+    @PUT("pedidos/{id}")
+    Call<okhttp3.ResponseBody> solicitarCobroPedido(
+            @Header("Authorization") String token,
+            @Path("id") int pedidoId,
+            @Body com.google.gson.JsonObject body
+    );
 }
