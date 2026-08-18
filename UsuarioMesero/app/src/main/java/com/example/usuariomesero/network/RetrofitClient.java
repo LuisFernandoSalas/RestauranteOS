@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClient {
 
     // Asegúrate de que la IP sea la de tu servidor Laravel
-    private static final String BASE_URL = "https://satiable-parameter-synthesis.ngrok-free.dev/api/";
+    private static final String BASE_URL = "https://idealism-anchor-skipper.ngrok-free.dev/api/";
     private static Retrofit retrofit = null;
 
     // 👇 ESTE ES EL MÉTODO QUE JAVA ESTABA BUSCANDO 👇

@@ -34,14 +34,9 @@ public interface ApiService {
             @Body GuardarPedidoRequest request
     );
 
+    // Sirve para cambiar el estado de la mesa (Ej. a "entregado" o "cobro")
     @PUT("pedidos/{id}")
     Call<ResponseBody> actualizarEstadoPedido(
-            @Path("id") int pedidoId,
-            @Body Map<String, String> body
-    );
-
-    @POST("pedidos/{id}/cobrar")
-    Call<ResponseBody> cobrarPedido(
             @Path("id") int pedidoId,
             @Body Map<String, Object> body
     );
@@ -50,34 +45,18 @@ public interface ApiService {
     @GET("productos")
     Call<ProductoResponse> getProductos(@Header("Authorization") String token);
 
-    // 🟢 1. Obtener los detalles del pedido para mostrarlos en la pantalla de cobro
-    // Usamos la ruta específica que creó José: /pedidos/{id}/detalle-cobro
+    // 1. Obtener los detalles del pedido para mostrarlos en la pantalla de cobro
     @GET("pedidos/{id}/detalle-cobro")
-    Call<okhttp3.ResponseBody> obtenerDetallePedidoParaCobro(
+    Call<ResponseBody> obtenerDetallePedidoParaCobro(
             @Header("Authorization") String token,
             @Path("id") int pedidoId
     );
 
-    // 🟢 2. Enviar el pago al servidor
+    // 2. Enviar el pago al servidor
     @POST("pedidos/{id}/cobrar")
-    Call<okhttp3.ResponseBody> procesarCobro(
-            @Header("Authorization") String token,
-            @Path("id") int pedidoId,
-            @Body java.util.Map<String, Object> datosCobro
-    );
-
-    @POST("pedidos/{id}/cobrar") // Ajusta esta ruta a la que hayas definido en Laravel
     Call<ResponseBody> procesarCobro(
             @Header("Authorization") String token,
             @Path("id") int pedidoId,
             @Body JsonObject datosCobro
-    );
-
-    // Ruta para que el mesero actualice el pedido con los datos del cobro
-    @PUT("pedidos/{id}")
-    Call<okhttp3.ResponseBody> solicitarCobroPedido(
-            @Header("Authorization") String token,
-            @Path("id") int pedidoId,
-            @Body com.google.gson.JsonObject body
     );
 }

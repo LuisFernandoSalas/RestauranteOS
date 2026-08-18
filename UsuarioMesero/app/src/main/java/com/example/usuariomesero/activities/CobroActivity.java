@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.usuariomesero.models.ItemOrden;
 import com.example.usuariomesero.adapters.OrdenAdapter;
 import com.example.usuariomesero.models.Mesa;
+import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -62,6 +63,18 @@ public class CobroActivity extends AppCompatActivity {
 
         mesaNumero = getIntent().getIntExtra("mesa_numero", 0);
         pedidoId = getIntent().getIntExtra("pedido_id", 1);
+
+        // Dentro de onCreate() en CobroActivity.java
+
+        String mesaJson = getIntent().getStringExtra("mesa_json");
+
+        if (mesaJson != null) {
+            // Reconstruimos el objeto Mesa usando Gson
+            Mesa mesa = new Gson().fromJson(mesaJson, Mesa.class);
+
+            // Aquí ya puedes usar la variable "mesa" normalmente
+            // ejemplo: double total = mesa.getTotal();
+        }
 
         initViews();
         updateTotals();
@@ -335,19 +348,32 @@ public class CobroActivity extends AppCompatActivity {
         boolean solicitarTicket = cbSolicitarTicket != null && cbSolicitarTicket.isChecked();
         boolean solicitarFactura = cbSolicitarFactura != null && cbSolicitarFactura.isChecked();
 
-        // 🚀 ARMAMOS EL JSON CON TODA LA INFO PARA CAJA
+        String metodo = metodoSeleccionado.toLowerCase();
+
+        // 🚀 CONSTRUCCIÓN DEL JSON CON TODOS LOS CAMPOS QUE EXIGE LARAVEL
         com.google.gson.JsonObject jsonBody = new com.google.gson.JsonObject();
 
-        // ¡SUPER IMPORTANTE! Esto le avisa a caja que la mesa está lista para cobrarse
-        jsonBody.addProperty("estado", "cobro");
-
-        jsonBody.addProperty("metodo_pago", metodoSeleccionado.toLowerCase());
+        jsonBody.addProperty("monto", totalACobrar); // 👈 Requerido por la validación de la API
+        jsonBody.addProperty("estado", "pagado");
+        jsonBody.addProperty("metodo_pago", metodo);
         jsonBody.addProperty("subtotal", totalPedido);
         jsonBody.addProperty("propina", propinaMonto);
-        jsonBody.addProperty("total", totalACobrar);  // Total con propina
+        jsonBody.addProperty("total", totalACobrar);
         jsonBody.addProperty("pago_recibido", recibido);
         jsonBody.addProperty("cambio", cambio);
         jsonBody.addProperty("requiere_factura", solicitarFactura ? 1 : 0);
+
+        // Desglose de pagos según el método elegido
+        if ("efectivo".equalsIgnoreCase(metodo)) {
+            jsonBody.addProperty("pago_efectivo", recibido);
+            jsonBody.addProperty("pago_tarjeta", 0.0);
+        } else if ("tarjeta".equalsIgnoreCase(metodo)) {
+            jsonBody.addProperty("pago_efectivo", 0.0);
+            jsonBody.addProperty("pago_tarjeta", totalACobrar);
+        } else {
+            jsonBody.addProperty("pago_efectivo", recibido);
+            jsonBody.addProperty("pago_tarjeta", 0.0);
+        }
 
         if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(false);
 
@@ -355,16 +381,15 @@ public class CobroActivity extends AppCompatActivity {
                 com.example.usuariomesero.network.RetrofitClient.getClient(token)
                         .create(com.example.usuariomesero.network.ApiService.class);
 
-        // LLAMAMOS AL NUEVO PUT EN LUGAR DEL POST DE COBRAR
-        apiService.solicitarCobroPedido("Bearer " + token, pedidoId, jsonBody)
-                .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+        apiService.procesarCobro("Bearer " + token, pedidoId, jsonBody)
+                .enqueue(new retrofit2.Callback() {
                     @Override
-                    public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
+                    public void onResponse(retrofit2.Call call, retrofit2.Response response) {
                         if (response.isSuccessful()) {
                             runOnUiThread(() -> {
                                 new AlertDialog.Builder(CobroActivity.this)
-                                        .setTitle("¡Caja Notificada!")
-                                        .setMessage("Se enviaron los datos. Pasa a caja para finalizar el cobro.")
+                                        .setTitle("¡Cobro Exitoso!")
+                                        .setMessage("El cobro se ha registrado correctamente en el sistema.")
                                         .setCancelable(false)
                                         .setPositiveButton("Aceptar", (dialog, which) -> {
                                             setResult(RESULT_OK);
@@ -375,16 +400,16 @@ public class CobroActivity extends AppCompatActivity {
                         } else {
                             runOnUiThread(() -> {
                                 if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(true);
-                                Toast.makeText(CobroActivity.this, "Error al notificar a caja", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(CobroActivity.this, "Error al procesar el cobro (" + response.code() + ")", Toast.LENGTH_SHORT).show();
                             });
                         }
                     }
 
                     @Override
-                    public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {
+                    public void onFailure(retrofit2.Call call, Throwable t) {
                         runOnUiThread(() -> {
                             if (btnCobrarFinal != null) btnCobrarFinal.setEnabled(true);
-                            Toast.makeText(CobroActivity.this, "Error de red", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(CobroActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         });
                     }
                 });

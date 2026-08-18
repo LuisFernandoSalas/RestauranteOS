@@ -144,31 +144,34 @@ public class MesasActivity extends AppCompatActivity {
             } else if (mesa.getEstado() == Mesa.Estado.OCUPADA) {
                 String estadoPedido = mesa.getEstadoPedido() != null ? mesa.getEstadoPedido() : "";
 
-                // 1. Si el pedido ya fue enviado a cobro pero la mesa sigue marcada como ocupada
                 if ("cobro".equalsIgnoreCase(estadoPedido)) {
-                    Toast.makeText(this, "🔒 Esta mesa ya fue enviada a Caja. Espera a que cobren para liberarla.", Toast.LENGTH_LONG).show();
-                }
-                // 2. Si la cocina ya terminó el pedido
-                else if ("listo".equalsIgnoreCase(estadoPedido)) {
+                    abrirPantallaDeCobro(mesa);
+                } else if ("listo".equalsIgnoreCase(estadoPedido)) {
                     mostrarDialogoMarcarEntregado(mesa);
-                }
-                // 3. Si la cocina aún está preparando el pedido
-                else if ("en_preparacion".equalsIgnoreCase(estadoPedido) || "pendiente".equalsIgnoreCase(estadoPedido)) {
+                } else if ("en_preparacion".equalsIgnoreCase(estadoPedido) || "pendiente".equalsIgnoreCase(estadoPedido)) {
                     Toast.makeText(this, "⚠️ Cocina aún está preparando el pedido. Espera a que esté listo para entregar y cobrar.", Toast.LENGTH_LONG).show();
-                }
-                // 4. Si el pedido está entregado (y aún no se ha mandado a cobro)
-                else {
+                } else {
                     mostrarDialogoConfirmarCobro(mesa);
                 }
 
             } else if (mesa.getEstado() == Mesa.Estado.COBRO) {
-                // 🛑 Si el enum de la mesa ya viene como COBRO desde la API
-                Toast.makeText(MesasActivity.this, "🔒 Esta mesa ya está en proceso de cobro.", Toast.LENGTH_SHORT).show();
+                abrirPantallaDeCobro(mesa);
             }
         });
 
         rvMesas.setLayoutManager(new GridLayoutManager(this, 3));
         rvMesas.setAdapter(mesaAdapter);
+    }
+
+    private void abrirPantallaDeCobro(Mesa mesa) {
+        Intent intent = new Intent(MesasActivity.this, CobroActivity.class);
+        intent.putExtra("mesa_numero", mesa.getNumero());
+        intent.putExtra("pedido_id", mesa.getPedidoId());
+
+        String mesaJson = new Gson().toJson(mesa);
+        intent.putExtra("mesa_json", mesaJson);
+
+        startActivity(intent);
     }
 
     private void mostrarDialogoMarcarEntregado(Mesa mesa) {
@@ -186,7 +189,8 @@ public class MesasActivity extends AppCompatActivity {
         String token = sesionManager.getAuthToken();
         ApiService apiService = RetrofitClient.getClient(token).create(ApiService.class);
 
-        Map<String, String> body = new HashMap<>();
+        // CORREGIDO: Declarado como Map<String, Object> para coincidir con ApiService
+        Map<String, Object> body = new HashMap<>();
         body.put("estado", "entregado");
 
         apiService.actualizarEstadoPedido(mesa.getPedidoId(), body).enqueue(new Callback<ResponseBody>() {
@@ -227,7 +231,8 @@ public class MesasActivity extends AppCompatActivity {
             String token = sesionManager.getAuthToken();
             ApiService apiService = RetrofitClient.getClient(token).create(ApiService.class);
 
-            java.util.Map<String, String> body = new java.util.HashMap<>();
+            // CORREGIDO: Declarado como Map<String, Object> para coincidir con ApiService
+            Map<String, Object> body = new HashMap<>();
             body.put("estado", "cobro");
 
             apiService.actualizarEstadoPedido(mesa.getPedidoId(), body).enqueue(new Callback<ResponseBody>() {
@@ -238,11 +243,7 @@ public class MesasActivity extends AppCompatActivity {
                         mesaAdapter.notifyDataSetChanged();
                         dialog.dismiss();
 
-                        // 🚀 AHORA SÍ: Abrimos la pantalla de cobro inmediatamente
-                        Intent intent = new Intent(MesasActivity.this, CobroActivity.class);
-                        intent.putExtra("mesa_numero", mesa.getNumero());
-                        intent.putExtra("pedido_id", mesa.getPedidoId());
-                        startActivity(intent);
+                        abrirPantallaDeCobro(mesa);
 
                     } else {
                         btnConfirmar.setEnabled(true);
@@ -292,10 +293,8 @@ public class MesasActivity extends AppCompatActivity {
 
         View navFooter = findViewById(R.id.nav_container_mesas);
         if (navFooter != null) {
-            // 1. Asignar evento de clic al pie de página para cerrar sesión
             navFooter.setOnClickListener(v -> mostrarDialogoCerrarSesion());
 
-            // 2. Si viene el nombre del usuario, actualizar textos y avatar
             if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
                 TextView tvWelcomeToolbar = findViewById(R.id.tv_welcome_user_toolbar);
                 if (tvWelcomeToolbar != null) {
@@ -324,7 +323,6 @@ public class MesasActivity extends AppCompatActivity {
         }
     }
 
-    // Método para mostrar la alerta de confirmación
     private void mostrarDialogoCerrarSesion() {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("🚪 Cerrar Sesión")
@@ -333,14 +331,14 @@ public class MesasActivity extends AppCompatActivity {
                     if (drawerLayout != null) {
                         drawerLayout.closeDrawer(GravityCompat.START);
                     }
-                    cerrarSesion(); // Utiliza tu método existente para borrar token y redirigir
+                    cerrarSesion();
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
     private void setupCloseButton() {
-        android.view.View closeButton = findViewById(R.id.btn_close_drawer);
+        View closeButton = findViewById(R.id.btn_close_drawer);
         if (closeButton != null) {
             closeButton.setOnClickListener(v -> {
                 if (drawerLayout != null) {
@@ -361,7 +359,7 @@ public class MesasActivity extends AppCompatActivity {
         });
     }
 
-    public void openDrawerClick(android.view.View view) {
+    public void openDrawerClick(View view) {
         if (drawerLayout != null) {
             drawerLayout.openDrawer(GravityCompat.START);
         }
